@@ -227,3 +227,19 @@ def normalize_frame(frame, scaler_type='minmax'):
         i[0] = data_norm.flatten()
     print(f"Normalization with scaler type '{scaler_type}' finished")
     return frame
+
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as transforms
+class FrameDataSet(Dataset):
+    def __init__(self, data, labels):
+        self.data = data
+        self.transform = transforms.Compose([transforms.ToTensor()])
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        data = self.data[idx]
+        labels = self.labels[idx]
+        return data, labels

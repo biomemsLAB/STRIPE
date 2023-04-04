@@ -227,3 +227,61 @@ def normalize_frame(frame, scaler_type='minmax'):
         i[0] = data_norm.flatten()
     print(f"Normalization with scaler type '{scaler_type}' finished")
     return frame
+
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as transforms
+class WindowedFrameDataset(Dataset):
+    """
+    A PyTorch dataset that represents windowed frames of data and their labels.
+
+    Parameters
+    ----------
+    data : numpy.ndarray or list
+        The input data array of shape (num_frames, num_channels, height, width).
+    labels : numpy.ndarray or list
+        The target labels array of shape (num_frames,).
+
+    Attributes
+    ----------
+    data : numpy.ndarray or list
+        The input data array.
+    transform : torchvision.transforms
+        The transform applied to the input data.
+    labels : numpy.ndarray or list
+        The target labels array.
+
+    Methods
+    -------
+    __len__()
+        Returns the length of the dataset.
+    __getitem__(idx)
+        Returns the data and label of the specified index.
+
+    Notes
+    -----
+    This class takes a numpy array or a list of windowed frames of data and their labels, and transforms them into a PyTorch dataset.
+    It also applies a transform to the input data to convert it to a tensor.
+
+    Example
+    -------
+    # create a dataset
+    time_rows = np.random.randn(100, 3, 32, 32)
+    labels = np.random.randint(0, 2, size=(100,))
+    windowed_frame_dataset = WindowedFrameDataset(time_rows, labels)
+
+    # create a dataloader
+    batch_size = 32
+    windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
+    """
+    def __init__(self, data, labels):
+        self.data = data
+        self.transform = transforms.Compose([transforms.ToTensor()])
+        self.labels = labels
+
+    def __len__(self):
+        return len(self.data)
+
+    def __getitem__(self, idx):
+        data = self.data[idx]
+        labels = self.labels[idx]
+        return data, labels

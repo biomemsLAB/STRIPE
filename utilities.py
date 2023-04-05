@@ -165,10 +165,28 @@ def application_of_windowing(merged_data, window_size, step_size=None):
             frame.append(np.array([win1[l], win2[l], win3[l], i], dtype=object))
     return np.array(frame)
 
-def preprocessing_for_one_recording(path):
+def count_indexes_up_to_value(arr, value):
+    import numpy as np
+    # Find the indexes where the array values are less than or equal to the specified value
+    indexes = np.where(arr <= value)[0]
+    # Count the number of indexes
+    count = len(indexes)
+    return count
+def get_window_size_in_index_count(timestamps, window_size_in_sec):
+    """
+    calculate window size in index counts from defined windowsize (in sec)
+    :param timestamps: all timestamps (used for calculation)
+    :param window_size_in_sec: windowsize in seconds
+    :return: window_size_in_count
+    """
+    window_size_in_count = count_indexes_up_to_value(timestamps, window_size_in_sec)
+    return window_size_in_count - 1
+
+def preprocessing_for_one_recording(path, window_size_in_sec=0.001):
     """
     preprocessing pipeline for one recording (without normalization)
     :param path: path to recording file
+    :param window_size_in_sec: window size in seconds (default = 0.001)
     :return: frame: A numpy array representing the merged data, which is devided by windows. With rows corresponding to windows
         and columns corresponding to signal_raw, labels, timestamps and electrode number.
     """
@@ -176,7 +194,8 @@ def preprocessing_for_one_recording(path):
     labels_of_all_spiketrains = create_labels_of_all_spiketrains(ground_truth, timestamps)
     assignments = assign_neuron_locations_to_electrode_locations(electrode_locations, neuron_locations, 20)
     merged_data = merge_data_to_location_assignments(assignments, signal_raw.transpose(), labels_of_all_spiketrains, timestamps)
-    frame = application_of_windowing(merged_data, window_size=10, step_size=None)
+    window_size_in_counts = get_window_size_in_index_count(timestamps, window_size_in_sec)
+    frame = application_of_windowing(merged_data, window_size=window_size_in_counts, step_size=None)
     print('preprocessing finished for:', path)
     return frame
 

@@ -1,6 +1,7 @@
+import torch
 import torch.nn as nn
 from torchinfo import summary
-from utilities_functions import EarlyStopper
+from nn_utilities import EarlyStopper
 
 class handle_model():
     """

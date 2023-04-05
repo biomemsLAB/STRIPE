@@ -4,9 +4,9 @@ if __name__ == '__main__':
     print("Welcome to STRIPE")
 
     # create one big numpy array
-    path_to_dir_raw_data=''
-    path_to_save_numpy_array_raw=''
-    path_to_save_numpy_array_normalized=''
+    path_to_dir_raw_data='data/raw/train'
+    path_to_save_numpy_array_raw='data/save/before_normalization/frame_raw.npy'
+    path_to_save_numpy_array_normalized='data/save/after_normalization/frame_norm_minmax.npy'
 
     from utilities import preprocessing_for_multiple_recordings, save_frame_to_disk, load_frame_from_disk, normalize_frame
     frame_of_multiple_recordings = preprocessing_for_multiple_recordings(path_to_dir_raw_data)

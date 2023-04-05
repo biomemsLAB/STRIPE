@@ -201,11 +201,11 @@ def preprocessing_for_multiple_recordings(path):
     print('preprocessing finished for:', path)
     return frame_of_multiple_recordings
 
-def save_frame_to_disk(frame, path_target)
+def save_frame_to_disk(frame, path_target):
     import numpy as np
     np.save(path_target, frame, allow_pickle=True)
 
-def load_frame_from_disk(path_source)
+def load_frame_from_disk(path_source):
     import numpy as np
 
     frame = np.load(path_source, allow_pickle=True)

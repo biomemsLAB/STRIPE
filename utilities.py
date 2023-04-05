@@ -207,6 +207,7 @@ def save_frame_to_disk(frame, path_target)
 
 def load_frame_from_disk(path_source)
     import numpy as np
+
     frame = np.load(path_source, allow_pickle=True)
     return frame
 

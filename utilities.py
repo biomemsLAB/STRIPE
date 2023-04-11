@@ -288,7 +288,7 @@ def preprocessing_for_one_recording(path, window_size_in_sec=0.001):
     assignments = assign_neuron_locations_to_electrode_locations(electrode_locations, neuron_locations, 20)
     merged_data = merge_data_to_location_assignments(assignments, signal_raw.transpose(), labels_of_all_spiketrains, timestamps)
     window_size_in_counts = get_window_size_in_index_count(timestamps, window_size_in_sec)
-    frame = application_of_windowing(merged_data, window_size=window_size_in_counts, step_size=None)
+    frame = application_of_windowing_v2(merged_data=merged_data, window_size=window_size_in_counts, step_size=None, feature_calculation=False)
     print('preprocessing finished for:', path)
     return frame
 

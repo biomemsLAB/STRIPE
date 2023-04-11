@@ -165,6 +165,99 @@ def application_of_windowing(merged_data, window_size, step_size=None):
             frame.append(np.array([win1[l], win2[l], win3[l], i], dtype=object))
     return np.array(frame)
 
+def application_of_windowing_v2(merged_data, window_size, step_size=None, feature_calculation=False):
+    """
+    Version 2 of application_of_windowing(). Currently designed just for one window_size and one step_size. Devides
+    merged data into windows and calculate features for windows. Additionally, set a label for each window.
+    :param merged_data: A numpy array representing the merged data from merge_data_to_location_assignments().
+    :param window_size: Size of each window in counts.
+    :param step_size: Size (in counts) of offset between windows.
+        If the step_size is not provided, it defaults to the window_size.
+        If the step_size is set to True, it is set to half of the window_size.
+        If the step_size is set to any other value, it is used directly as the step_size.
+    :param feature_calculation: bool. Defines the boolean value if calculate_features() is active or not.
+    :return: A custom ndarray representing the merged data, which is devided by windows. With rows corresponding to windows
+        and columns corresponding to signal_raw (signals), labels, timestamps, electrode number, features and label_per_window.
+    """
+    import numpy as np
+
+    if step_size is None:
+        step_size = window_size
+    elif step_size is True:
+        step_size = window_size // 2
+    elif step_size is not None:
+        step_size = int(step_size)
+
+    # calculate number of features dynamically based on the returned feature vector from calculate_features()
+    sample_data = merged_data[0][0:window_size]
+    features_size = calculate_features(window_data=sample_data, calculate=feature_calculation).shape[0]
+
+    # defining empty custom ndarray
+    num_windows = sum((data.shape[1] - window_size) // step_size + 1 for data in merged_data)
+    frame = np.zeros((num_windows,), dtype=[
+        ('signals', np.float64, (window_size,)),
+        ('labels', np.float64, (window_size,)),
+        ('timestamps', np.float64, (window_size,)),
+        ('electrode_number', np.int32),
+        ('features', np.float64, (features_size,)),
+        ('label_per_window', np.int32)
+    ])
+
+    curr_idx = 0
+    for i, data in enumerate(merged_data):
+        # calculate windows
+        num_windows_i = (data.shape[1] - window_size) // step_size + 1
+        win1 = np.lib.stride_tricks.as_strided(
+            data[0], shape=(num_windows_i, window_size), strides=(data[0].strides[0] * step_size, data[0].strides[0]))
+        win2 = np.lib.stride_tricks.as_strided(
+            data[1], shape=(num_windows_i, window_size), strides=(data[1].strides[0] * step_size, data[1].strides[0]))
+        win3 = np.lib.stride_tricks.as_strided(
+            data[2], shape=(num_windows_i, window_size), strides=(data[2].strides[0] * step_size, data[2].strides[0]))
+
+        for j in range(num_windows_i):
+            # apply windowing to resulting frame
+            frame[curr_idx]['signals'] = win1[j]
+            frame[curr_idx]['labels'] = win2[j]
+            frame[curr_idx]['timestamps'] = win3[j]
+            frame[curr_idx]['electrode_number'] = i
+            # calculate features for each window
+            frame[curr_idx]['features'] = calculate_features(window_data=win1[j], calculate=feature_calculation)
+            frame[curr_idx]['label_per_window'] = label_a_window_from_labels_of_a_window(win2[j])
+            curr_idx += 1
+
+    return frame
+
+def calculate_features(window_data, calculate=False):
+    """
+    Calculates features for input data.
+    :param window_data: input data for calculation
+    :param calculate: bool.
+        If calculate is set to True, it calculates the defined features and returns the feature array.
+        If calculate is set to False, it returns a np.zeros array.
+    :return: feature array or np.zeros array with size 1
+    """
+    import numpy as np
+    if calculate is True:
+        # Assuming 3 features for example purposes
+        num_features = 3
+        features = np.zeros((num_features,))
+        features[0] = np.mean(window_data)
+        features[1] = np.min(window_data)
+        features[2] = np.max(window_data)
+        return features
+    elif calculate is False:
+        return np.zeros((1,))
+
+def label_a_window_from_labels_of_a_window(window_data):
+    """
+    Finds the max value of input data and returns it as integer. Input data of labels of a window should only be 0s and 1s.
+    :param window_data: input data for calculation
+    :return: label. It represents the label of the input window.
+    """
+    import numpy as np
+    label = int(np.max(window_data))
+    return label
+
 def count_indexes_up_to_value(arr, value):
     import numpy as np
     # Find the indexes where the array values are less than or equal to the specified value

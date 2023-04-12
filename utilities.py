@@ -334,7 +334,7 @@ def preprocessing_for_multiple_recordings(path):
         if frame_of_multiple_recordings is None:
             frame_of_multiple_recordings = frame_of_one_recording.copy()
         else:
-            frame_of_multiple_recordings = np.vstack((frame_of_multiple_recordings, frame_of_one_recording))
+            frame_of_multiple_recordings = np.hstack((frame_of_multiple_recordings, frame_of_one_recording))
     print('preprocessing finished for:', path)
     return frame_of_multiple_recordings
 
@@ -437,6 +437,13 @@ def create_dataloader(frame, batch_size=32):
     from torch.utils.data import DataLoader
     time_rows = frame['signals']  #frame[:, 0]
     labels = frame['label_per_window'] #frame[:, 1]
+    windowed_frame_dataset = WindowedFrameDataset(time_rows, labels)
+    windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
+    return windowed_frame_dataloader
+
+def create_dataloader_simple(data, labels, batch_size=32):
+    from torch.utils.data import DataLoader
+    time_rows = data
     windowed_frame_dataset = WindowedFrameDataset(time_rows, labels)
     windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
     return windowed_frame_dataloader

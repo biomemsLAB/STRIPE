@@ -319,7 +319,6 @@ def save_frame_to_disk(frame, path_target):
 
 def load_frame_from_disk(path_source):
     import numpy as np
-
     frame = np.load(path_source, allow_pickle=True)
     return frame
 
@@ -409,11 +408,26 @@ class WindowedFrameDataset(Dataset):
         labels = self.labels[idx]
         return data, labels
 
-def create_dataloader(frame, batch_size):
+def create_dataloader(frame, batch_size=32):
     from torch.utils.data import DataLoader
     time_rows = frame['signals']  #frame[:, 0]
     labels = frame['label_per_window'] #frame[:, 1]
     windowed_frame_dataset = WindowedFrameDataset(time_rows, labels)
-    batch_size = 32
     windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
     return windowed_frame_dataloader
+
+def splitting_data_into_train_test_val_set(data, labels, test_and_val_size=0.4, val_size_of_test_and_val_size=0.5):
+    """
+    Splits data and labels into training, test and validation set.
+    :param data: input set which contains data
+    :param labels: input set which contains labels for data
+    :param test_and_val_size: size of test and validation set combined. Rest equals training set.
+    :param val_size_of_test_and_val_size: size of validation set corresponding to test_and_val_size. Rest equals test set.
+    :return: training, test and validation set for data and labels
+    """
+    from sklearn.model_selection import train_test_split
+    X = data
+    y = labels
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_and_val_size)
+    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=val_size_of_test_and_val_size)
+    return x_train, y_train, x_test, y_test, x_val, y_val

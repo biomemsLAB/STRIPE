@@ -1,4 +1,29 @@
 
+def create_directory_structure(path):
+    """
+    Checks if a certain directory structure exists at the given path, and creates the structure if it doesn't.
+    :param path: path to working directory.
+    :return: None
+    """
+    import os
+    # Define the directory structure you want to create
+    directory_structure = [
+        "data/raw/test",
+        "data/raw/test",
+        "data/raw/test",
+        "data/save/after_normalization",
+        "data/save/before_normalization"
+    ]
+
+    # Check if each directory in the structure exists, and create it if it doesn't
+    for directory in directory_structure:
+        directory_path = os.path.join(path, directory)
+        if not os.path.exists(directory_path):
+            os.makedirs(directory_path)
+            print(f"Created directory: {directory_path}")
+        else:
+            print(f"Directory already exists: {directory_path}")
+
 def import_recording_h5(path):
     """
     Import recording h5 file from MEArec.

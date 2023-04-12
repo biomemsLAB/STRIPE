@@ -343,6 +343,7 @@ def normalize_frame(frame, scaler_type='minmax'):
     else:
         raise ValueError(f"Scaler type {scaler_type} not supported. Please choose 'standard', 'minmax', or 'robust'")
 
+    print(f"Normalization with scaler type '{scaler_type}' started")
     for i in frame:
         data_raw = i[0]
         data_norm = scaler.fit_transform(data_raw.reshape(-1,1))

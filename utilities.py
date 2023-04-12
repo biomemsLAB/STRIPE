@@ -408,3 +408,12 @@ class WindowedFrameDataset(Dataset):
         data = self.data[idx]
         labels = self.labels[idx]
         return data, labels
+
+def create_dataloader(frame, batch_size):
+    from torch.utils.data import DataLoader
+    time_rows = frame['signals']  #frame[:, 0]
+    labels = frame['label_per_window'] #frame[:, 1]
+    windowed_frame_dataset = WindowedFrameDataset(time_rows, labels)
+    batch_size = 32
+    windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
+    return windowed_frame_dataloader

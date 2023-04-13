@@ -380,7 +380,9 @@ def preprocessing_for_multiple_recordings(path):
 
 def save_frame_to_disk(frame, path_target):
     import numpy as np
+    print('started saving frame to disk')
     np.save(path_target, frame, allow_pickle=True)
+    print('frame saved to disk')
 
 def load_frame_from_disk(path_source):
     import numpy as np

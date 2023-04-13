@@ -260,11 +260,11 @@ def application_of_windowing_v2(merged_data, window_size, step_size=None, featur
     # defining empty custom ndarray
     num_windows = sum((data.shape[1] - window_size) // step_size + 1 for data in merged_data)
     frame = np.zeros((num_windows,), dtype=[
-        ('signals', np.float64, (window_size,)),
-        ('labels', np.float64, (window_size,)),
-        ('timestamps', np.float64, (window_size,)),
+        ('signals', np.float32, (window_size,)),
+        ('labels', np.float32, (window_size,)),
+        ('timestamps', np.float32, (window_size,)),
         ('electrode_number', np.int32),
-        ('features', np.float64, (features_size,)),
+        ('features', np.float32, (features_size,)),
         ('label_per_window', np.int32)
     ])
 

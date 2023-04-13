@@ -68,7 +68,7 @@ class handle_model():
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, patience=3, verbose=False)
         self.early_stopper = EarlyStopper(patience=5, min_delta=0.0001)
-        self.model_info = summary(self.model, input_size=(self.batch_size, 3, 28, 28))
+        self.model_info = summary(self.model, input_size=(self.batch_size, 10))
 
         print(f"Running model")
         for self.epoch in range(self.epochs):
@@ -96,14 +96,14 @@ class handle_model():
         self.model.train()
         temp_train_loss = []
         for batch, (X, y) in enumerate(dataloader):
-            X, y = X.to(self.device), y.to(self.device)
+            X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
 
             # Compute prediction error
             pred = self.model(X)
             #max_indices = pred.argmax(dim=1)
             #max_tensor = max_indices
 
-            y = y.squeeze(1)
+            # y = y.squeeze(1)
             loss = self.loss_fn(pred, y)
             self.train_loss.append(loss.item())
             # self.scheduler.step(loss)
@@ -126,8 +126,8 @@ class handle_model():
         check_train_loss, correct = 0, 0
         with torch.no_grad():
             for X, y in dataloader:
-                X, y = X.to(self.device), y.to(self.device)
-                y = y.squeeze(1)
+                X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
+                # y = y.squeeze(1)
                 pred = self.model(X)
                 check_train_loss += self.loss_fn(pred, y).item()
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
@@ -156,8 +156,8 @@ class handle_model():
         self.eval_loss, correct = 0, 0
         with torch.no_grad():
             for X, y in dataloader:
-                X, y = X.to(self.device), y.to(self.device)
-                y = y.squeeze(1)
+                X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
+                # y = y.squeeze(1)
                 pred = self.model(X)
                 self.eval_loss += self.loss_fn(pred, y).item()
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()
@@ -186,8 +186,8 @@ class handle_model():
         test_loss, correct = 0, 0
         with torch.no_grad():
             for X, y in dataloader:
-                X, y = X.to(self.device), y.to(self.device)
-                y = y.squeeze(1)
+                X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
+                # y = y.squeeze(1)
                 pred = self.model(X)
                 test_loss += self.loss_fn(pred, y).item()
                 correct += (pred.argmax(1) == y).type(torch.float).sum().item()

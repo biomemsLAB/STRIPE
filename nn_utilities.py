@@ -1,3 +1,4 @@
+import numpy as np
 class EarlyStopper:
     """Helper class for early stopping during training.
 

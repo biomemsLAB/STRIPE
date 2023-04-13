@@ -1,4 +1,4 @@
-
+import numpy as np
 def create_directory_structure(path):
     """
     Checks if a certain directory structure exists at the given path, and creates the structure if it doesn't.
@@ -463,9 +463,9 @@ class WindowedFrameDataset(Dataset):
     windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
     """
     def __init__(self, data, labels):
-        self.data = data
+        self.data = data.astype('float32')
         self.transform = transforms.Compose([transforms.ToTensor()])
-        self.labels = labels
+        self.labels = labels.astype('float32')
 
     def __len__(self):
         return len(self.data)

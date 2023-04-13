@@ -8,9 +8,10 @@ def create_directory_structure(path):
     import os
     # Define the directory structure you want to create
     directory_structure = [
+        "data/raw/train",
         "data/raw/test",
-        "data/raw/test",
-        "data/raw/test",
+        "data/raw/val",
+        "data/raw/one",
         "data/save/after_normalization",
         "data/save/before_normalization"
     ]
@@ -23,6 +24,45 @@ def create_directory_structure(path):
             print(f"Created directory: {directory_path}")
         else:
             print(f"Directory already exists: {directory_path}")
+
+def paths(path, scaler_type=None):
+    import os
+    path_work_dir = path
+    path_raw_train = "data/raw/train"
+    path_raw_test = "data/raw/test"
+    path_raw_val = "data/raw/val"
+    path_raw_one = "data/raw/one"
+    path_save_after_norm = "data/save/after_normalization"
+    path_save_before_norm = "data/save/before_normalization"
+
+    filename_train_before_norm = 'train_frame_raw.npy'
+    filename_test_before_norm = 'test_frame_raw.npy'
+    filename_val_before_norm = 'val_frame_raw.npy'
+    filename_one_before_norm = 'one_frame_raw.npy'
+
+    final_path_raw_train = os.path.join(path_work_dir, path_raw_train)
+    final_path_raw_test = os.path.join(path_work_dir, path_raw_test)
+    final_path_raw_val = os.path.join(path_work_dir, path_raw_val)
+    final_path_raw_one = os.path.join(path_work_dir, path_raw_one)
+
+    if scaler_type is None:
+        final_name_train_before_norm = os.path.join(path_work_dir, path_save_before_norm, filename_train_before_norm)
+        final_name_test_before_norm = os.path.join(path_work_dir, path_save_before_norm, filename_test_before_norm)
+        final_name_val_before_norm = os.path.join(path_work_dir, path_save_before_norm, filename_val_before_norm)
+        final_name_one_before_norm = os.path.join(path_work_dir, path_save_before_norm, filename_one_before_norm)
+        return final_path_raw_train, final_path_raw_test, final_path_raw_val, final_path_raw_one, final_name_train_before_norm, final_name_test_before_norm, final_name_val_before_norm, final_name_one_before_norm
+
+    elif scaler_type is not None:
+        filename_train_after_norm = ''.join(['train_frame_norm_', scaler_type, '.npy'])
+        filename_test_after_norm = ''.join(['test_frame_norm_', scaler_type, '.npy'])
+        filename_val_after_norm = ''.join(['val_frame_norm_', scaler_type, '.npy'])
+        filename_one_after_norm = ''.join(['one_frame_norm_', scaler_type, '.npy'])
+
+        final_name_train_after_norm = os.path.join(path_work_dir, path_save_after_norm, filename_train_after_norm)
+        final_name_test_after_norm = os.path.join(path_work_dir, path_save_after_norm, filename_test_after_norm)
+        final_name_val_after_norm = os.path.join(path_work_dir, path_save_after_norm, filename_val_after_norm)
+        final_name_one_after_norm = os.path.join(path_work_dir, path_save_after_norm, filename_one_after_norm)
+        return final_path_raw_train, final_path_raw_test, final_path_raw_val, final_path_raw_one, final_name_train_after_norm, final_name_test_after_norm, final_name_val_after_norm, final_name_one_after_norm
 
 def import_recording_h5(path):
     """

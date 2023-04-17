@@ -386,7 +386,9 @@ def save_frame_to_disk(frame, path_target):
 
 def load_frame_from_disk(path_source):
     import numpy as np
+    print('started loading frame from disk')
     frame = np.load(path_source, allow_pickle=True)
+    print('frame loaded from disk')
     return frame
 
 def normalize_frame(frame, scaler_type='minmax'):
@@ -505,3 +507,11 @@ def splitting_data_into_train_test_val_set(data, labels, test_and_val_size=0.4, 
     x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_and_val_size)
     x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=val_size_of_test_and_val_size)
     return x_train, y_train, x_test, y_test, x_val, y_val
+
+def balancing_dataset_with_undersampling(data, labels):
+    from imblearn.under_sampling import RandomUnderSampler
+    print('balancing started')
+    undersample = RandomUnderSampler(sampling_strategy='majority')
+    data_result, labels_result = undersample.fit_resample(data, labels)
+    print('balancing finished')
+    return data_result, labels_result

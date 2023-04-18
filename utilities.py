@@ -489,7 +489,7 @@ def create_dataloader_simple(data, labels, batch_size=32):
     from torch.utils.data import DataLoader
     time_rows = data
     windowed_frame_dataset = WindowedFrameDataset(time_rows, labels)
-    windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
+    windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     return windowed_frame_dataloader
 
 def splitting_data_into_train_test_val_set(data, labels, test_and_val_size=0.4, val_size_of_test_and_val_size=0.5):

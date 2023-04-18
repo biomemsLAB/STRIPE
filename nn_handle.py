@@ -66,10 +66,14 @@ class handle_model():
         self.learing_rate = learning_rate
         self.loss_fn = loss_fn
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, patience=3, verbose=False)
-        self.early_stopper = EarlyStopper(patience=5, min_delta=0.0001)
-        self.model_info = summary(self.model, input_size=(self.batch_size, 10))
-
+        from nn_utilities import Lion
+        self.optimizer = Lion(self.model.parameters(), lr=learning_rate)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, patience=10, verbose=False)
+        self.early_stopper = EarlyStopper(patience=15, min_delta=0.05)
+        try:
+            self.model_info = summary(self.model, input_size=(self.batch_size, 10))
+        except:
+            print("Summary not working")
         print(f"Running model")
         for self.epoch in range(self.epochs):
             print(f"Epoch {self.epoch + 1} of {self.name_of_model}\n-------------------------------")

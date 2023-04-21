@@ -241,7 +241,7 @@ class LSTM_Model(nn.Module):
         self.lstm_1 = nn.LSTM(hidden_features, hidden_features, num_layers, batch_first=True)
         self.lstm_2 = nn.LSTM(hidden_features, hidden_features, num_layers, batch_first=True)
         self.fc_2 = nn.Linear(hidden_features, out_features)
-        self.relu = nn.ReLU()
+        self.relu = nn.SELU()
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         # h0 = torch.zeros(self.num_layers, input_tensor.size(0), self.hidden_features).to(self.device)

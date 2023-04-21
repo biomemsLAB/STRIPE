@@ -194,8 +194,8 @@ class handle_model():
         self.model.eval()
         test_loss, correct = 0, 0
         with torch.no_grad():
+            print("Calculation Test Accuracy and average Loss")
             with alive_bar(total=len(dataloader), force_tty=True) as bar:
-                print("Calculation Test Accuracy and average Loss")
                 for X, y in dataloader:
                     X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
                     # y = y.squeeze(1)

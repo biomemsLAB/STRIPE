@@ -224,3 +224,31 @@ class CustomResNet(nn.Module):
         x = self.fc(x)
 
         return x
+
+class LSTM_Model(nn.Module):
+    def __init__(self, in_features: int, hidden_features: int, out_features: int, num_layers=2, bias: bool = True,
+                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), dtype=None) -> None:
+        super(LSTM_Model, self).__init__()
+
+        self.in_features = in_features
+        self.hidden_features = hidden_features
+        self.out_features = out_features
+        self.num_layers = num_layers
+        self.bias = bias
+        self.device = device
+
+        self.fc_1 = nn.Linear(in_features, hidden_features)
+        self.lstm_1 = nn.LSTM(hidden_features, hidden_features, num_layers, batch_first=True)
+        self.lstm_2 = nn.LSTM(hidden_features, hidden_features, num_layers, batch_first=True)
+        self.fc_2 = nn.Linear(hidden_features, out_features)
+        self.relu = nn.ReLU()
+
+    def forward(self, input_tensor: Tensor) -> Tensor:
+        # h0 = torch.zeros(self.num_layers, input_tensor.size(0), self.hidden_features).to(self.device)
+        h0 = torch.zeros(self.num_layers, self.hidden_features).to(self.device)
+        c0 = torch.zeros(self.num_layers, self.hidden_features).to(self.device)
+        fc_1_out = self.relu(self.fc_1(input_tensor))
+        lstm_1_out, _ = self.lstm_1(fc_1_out, (h0, c0))
+        lstm_2_out, _ = self.lstm_2(lstm_1_out, (h0, c0))
+        fc_2_out = self.relu(self.fc_2(lstm_2_out))
+        return fc_2_out

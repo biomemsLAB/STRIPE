@@ -51,7 +51,7 @@ class EarlyStopper:
 
 import torch
 import torch.nn as nn
-def compare_models_acc_over_epoch(train_dataloader, eval_dataloader, test_dataloader, *models: nn.Module) -> None:
+def compare_models_acc_over_epoch(train_dataloader, eval_dataloader, test_dataloader, *models: nn.Module, epochs=100, learning_rate=0.001, path_to_save="") -> None:
     """
     Compare the train and eval accuracy over epochs for multiple PyTorch models.
 
@@ -78,16 +78,16 @@ def compare_models_acc_over_epoch(train_dataloader, eval_dataloader, test_datalo
     eval_acc_list = []
     train_loss_list = []
 
-    epochs = 100
-    learning_rate = 0.0001
+    epochs = epochs
+    learning_rate = learning_rate
     for model_runner in model_handlers:
         model_runner.run(epochs=epochs, learning_rate=learning_rate)
         train_acc_list.append(model_runner.train_acc)
         eval_acc_list.append(model_runner.eval_acc)
         train_loss_list.append(model_runner.train_loss)
 
+    path = path_to_save + "/Compare"
 
-    path = "Compare"
 
     import pandas as pd
     df_train_acc = pd.DataFrame(train_acc_list).T

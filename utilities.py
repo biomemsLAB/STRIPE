@@ -504,14 +504,70 @@ def splitting_data_into_train_test_val_set(data, labels, test_and_val_size=0.4, 
     from sklearn.model_selection import train_test_split
     X = data
     y = labels
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_and_val_size)
-    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=val_size_of_test_and_val_size)
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_and_val_size, stratify=y)
+    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=val_size_of_test_and_val_size, stratify=y_test)
     return x_train, y_train, x_test, y_test, x_val, y_val
 
 def balancing_dataset_with_undersampling(data, labels):
+    """
+    balancing dataset with random undersampling with sampling strategy 'majority'
+    :param data: input data
+    :param labels: corresponding labels for input data.
+    :return: balanced data and labels (unshuffeled)
+    """
     from imblearn.under_sampling import RandomUnderSampler
     print('balancing started')
     undersample = RandomUnderSampler(sampling_strategy='majority')
     data_result, labels_result = undersample.fit_resample(data, labels)
     print('balancing finished')
     return data_result, labels_result
+
+def cropping_dataset(data, labels, cropping_size):
+    """
+    crop dataset to size of cropping_size to a subset
+    :param data: input data
+    :param labels: corresponding labels for input data.
+    :param cropping_size: float between 0 and 1. proportion of resulting dataset from input dataset
+    :return: cropped data and cropped labels
+    """
+    from sklearn.model_selection import train_test_split
+    X = data
+    y = labels
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=cropping_size, stratify=y)
+    return x_test, y_test
+
+def dataset_pipeline_for_training_process(frame, verbose=True):
+    """
+    pipeline for splitting, balancing and cropping datasets for training process
+    :param frame: input ndarray which contains data and corresponding labels
+    :param verbose: (bool) Default True. Prints proportions.
+    :return: undersampled training set, cropped test set, cropped validation set
+    """
+    # init
+    data = frame['signals']
+    labels = frame['label_per_window']
+    # splitting data
+    x_train, y_train, x_test, y_test, x_val, y_val = splitting_data_into_train_test_val_set(data, labels)
+
+    if verbose:
+        print('frame: spikes:', labels.sum(), 'total:', len(labels))
+        print('train: spikes:', y_train.sum(), 'total:', len(y_train))
+        print('test: spikes:', y_test.sum(), 'total:', len(y_test))
+        print('val: spikes:', y_val.sum(), 'total:', len(y_val))
+
+    # undersample training set
+    x_train_res, y_train_res = balancing_dataset_with_undersampling(x_train, y_train)
+    # calculation of cropping size
+    spikes_per_frame = (labels.sum()) / (len(labels))
+    # cropping test set
+    x_test_crp, y_test_crp = cropping_dataset(x_test, y_test, spikes_per_frame)
+    # cropping validation set
+    x_val_crp, y_val_crp = cropping_dataset(x_val, y_val, spikes_per_frame)
+
+    if verbose:
+        print('spikes_per_frame:', spikes_per_frame)
+        print('train_res: spikes:', y_train_res.sum(), 'total:', len(y_train_res))
+        print('test_crp: spikes:', y_test_crp.sum(), 'total:', len(y_test_crp))
+        print('val_crp: spikes:', y_val_crp.sum(), 'total:', len(y_val_crp))
+
+    return x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp

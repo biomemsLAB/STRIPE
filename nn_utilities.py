@@ -37,11 +37,15 @@ class EarlyStopper:
         if validation_loss < self.min_validation_loss:
             self.min_validation_loss = validation_loss
             self.counter = 0
+            if verbose:
+                print(f"Early Stop: Epoch Counter at {self.counter} with Patience {self.patience}, current min loss {self.min_validation_loss}/{self.min_validation_loss + self.min_delta}")
         elif validation_loss > (self.min_validation_loss + self.min_delta):
             self.counter += 1
+            if verbose:
+                print(f"Early Stop: Epoch Counter at {self.counter} with Patience {self.patience}, current min loss {self.min_validation_loss}/{self.min_validation_loss + self.min_delta}")
             if self.counter >= self.patience:
                 if verbose:
-                    print("Stopping Early to prevent overfitting :)")
+                    print("Stopping early to prevent overfitting")
                 return True
         return False
 
@@ -75,7 +79,7 @@ def compare_models_acc_over_epoch(train_dataloader, eval_dataloader, test_datalo
     train_loss_list = []
 
     epochs = 100
-    learning_rate = 0.001
+    learning_rate = 0.0001
     for model_runner in model_handlers:
         model_runner.run(epochs=epochs, learning_rate=learning_rate)
         train_acc_list.append(model_runner.train_acc)
@@ -83,8 +87,7 @@ def compare_models_acc_over_epoch(train_dataloader, eval_dataloader, test_datalo
         train_loss_list.append(model_runner.train_loss)
 
 
-    path = "Compare_"
-    path = path + train_dataloader.dataset.flag
+    path = "Compare"
 
     import pandas as pd
     df_train_acc = pd.DataFrame(train_acc_list).T

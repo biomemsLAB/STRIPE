@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torchinfo import summary
 from nn_utilities import EarlyStopper
+from alive_progress import alive_bar
 
 class handle_model():
     """
@@ -68,8 +69,8 @@ class handle_model():
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         from nn_utilities import Lion
         self.optimizer = Lion(self.model.parameters(), lr=learning_rate)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, patience=10, verbose=False)
-        self.early_stopper = EarlyStopper(patience=15, min_delta=0.05)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, patience=5, verbose=False)
+        self.early_stopper = EarlyStopper(patience=8, min_delta=0.008)
         try:
             self.model_info = summary(self.model, input_size=(self.batch_size, 10))
         except:
@@ -82,6 +83,7 @@ class handle_model():
             self.evaluate(self.eval_dataloader)
             if self.early_stopper.early_stop(self.eval_loss):
                 break
+            print("\n")
         self.test(self.test_dataloader)
 
         print("Done!")
@@ -159,16 +161,19 @@ class handle_model():
         self.model.eval()
         self.eval_loss, correct = 0, 0
         with torch.no_grad():
-            for X, y in dataloader:
-                X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
-                # y = y.squeeze(1)
-                pred = self.model(X)
-                self.eval_loss += self.loss_fn(pred, y).item()
-                correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            print("Calculating evaluation Accuracy and average Loss")
+            with alive_bar(total=len(dataloader), force_tty=True) as bar:
+                for X, y in dataloader:
+                    X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
+                    # y = y.squeeze(1)
+                    pred = self.model(X)
+                    self.eval_loss += self.loss_fn(pred, y).item()
+                    correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                    bar()
         self.scheduler.step(self.eval_loss)
         self.eval_loss /= num_batches
         correct /= size
-        print(f"Evaluation Error: \tAccuracy: {(100*correct):>0.2f}%, average evaluation loss: \t{self.eval_loss:>8f} \n")
+        print(f"Evaluation Error: \tAccuracy: {(100*correct):>0.2f}%, average evaluation loss: \t{self.eval_loss:>8f}")
         self.eval_acc.append(100*correct)
         self.eval_acc_with_epoch.append([self.epoch+1, 100*correct])
         self.avg_eval_loss.append(self.eval_loss)
@@ -189,12 +194,15 @@ class handle_model():
         self.model.eval()
         test_loss, correct = 0, 0
         with torch.no_grad():
-            for X, y in dataloader:
-                X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
-                # y = y.squeeze(1)
-                pred = self.model(X)
-                test_loss += self.loss_fn(pred, y).item()
-                correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            with alive_bar(total=len(dataloader), force_tty=True) as bar:
+                print("Calculation Test Accuracy and average Loss")
+                for X, y in dataloader:
+                    X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
+                    # y = y.squeeze(1)
+                    pred = self.model(X)
+                    test_loss += self.loss_fn(pred, y).item()
+                    correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                    bar()
         test_loss /= num_batches
         self.test_loss = test_loss
         correct /= size

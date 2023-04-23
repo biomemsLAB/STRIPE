@@ -39,7 +39,7 @@ if __name__ == '__main__':
     # windowed_frame_dataloader = create_dataloader(frame)
     # dataset_pipeline_for_training_process
     from nn_handle import handle_model
-    from custom_modles import DenseModel, ViT, CustomResNet, ResidualBlock, LSTM_Model
+    from custom_models import DenseModel, ViT, CustomResNet, ResidualBlock, LSTM_Model
     dense_model = DenseModel(in_features=10, hidden_features=50, out_features=2)
     custom_resnet34 = CustomResNet(ResidualBlock, [3, 4, 6, 3])
     transformer_model = ViT(image_size=28, patch_size=7, num_classes=10, channels=1, dim=64, depth=6, heads=8, mlp_dim=128)

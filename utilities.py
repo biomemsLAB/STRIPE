@@ -574,3 +574,24 @@ def dataset_pipeline_for_training_process(frame, verbose=True):
 
     return x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp
 
+def loading_and_stacking_frame(path, vstack=False):
+    """
+    loads multiple frames (.npy-files) from disk and stacks them to one frame
+    :param path: path to directory where frames are located. Only .npy-files with the same object types and structure are allowed.
+    :param vstack: bool. Defines stacking method (vstack or hstack). Default: False.
+    :return: stacked_frame
+    """
+    from pathlib import Path
+    import numpy as np
+    frames = [p for p in Path(path).iterdir()]
+    stacked_frame = None
+    for frm in frames:
+        one_frame = load_frame_from_disk(frm)
+        if stacked_frame is None:
+            stacked_frame = one_frame.copy()
+        else:
+            if vstack is True:
+                stacked_frame = np.vstack((stacked_frame, one_frame))
+            elif vstack is False:
+                stacked_frame = np.hstack((stacked_frame, one_frame))
+    return stacked_frame

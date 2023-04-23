@@ -1,4 +1,8 @@
 import numpy as np
+
+
+# general init functions
+
 def create_directory_structure(path):
     """
     Checks if a certain directory structure exists at the given path, and creates the structure if it doesn't.
@@ -24,6 +28,7 @@ def create_directory_structure(path):
             print(f"Created directory: {directory_path}")
         else:
             print(f"Directory already exists: {directory_path}")
+
 
 def paths(path, scaler_type=None):
     import os
@@ -64,6 +69,24 @@ def paths(path, scaler_type=None):
         final_name_one_after_norm = os.path.join(path_work_dir, path_save_after_norm, filename_one_after_norm)
         return final_path_raw_train, final_path_raw_test, final_path_raw_val, final_path_raw_one, final_name_train_after_norm, final_name_test_after_norm, final_name_val_after_norm, final_name_one_after_norm
 
+
+# save to and load from disk
+def save_frame_to_disk(frame, path_target):
+    import numpy as np
+    print('started saving frame to disk')
+    np.save(path_target, frame, allow_pickle=True)
+    print('frame saved to disk')
+
+
+def load_frame_from_disk(path_source):
+    import numpy as np
+    print('started loading frame from disk')
+    frame = np.load(path_source, allow_pickle=True)
+    print('frame loaded from disk')
+    return frame
+
+
+# preprocessing pipeline
 def import_recording_h5(path):
     """
     Import recording h5 file from MEArec.
@@ -78,9 +101,10 @@ def import_recording_h5(path):
     ground_truth = []
     for i in range(len(h5["spiketrains"].keys())):
         ground_truth.append(np.array(h5["spiketrains"][str(i)]["times"]))
-    channel_positions = np.array(h5["channel_positions"]) #indexes of columns x: 1 y: 2 z: 0
-    template_locations = np.array(h5["template_locations"]) #indexes of columns x: 1 y: 2 z: 0
+    channel_positions = np.array(h5["channel_positions"])  # indexes of columns x: 1 y: 2 z: 0
+    template_locations = np.array(h5["template_locations"])  # indexes of columns x: 1 y: 2 z: 0
     return signal_raw, timestamps, ground_truth, channel_positions, template_locations
+
 
 def create_labels_for_spiketrain(timestamps, times):
     """
@@ -110,6 +134,7 @@ def create_labels_for_spiketrain(timestamps, times):
         labels[nearest_index] = 1
     return labels
 
+
 def create_labels_of_all_spiketrains(ground_truth, timestamps):
     """
     Create labels for all ground_truth spiketrains using create_labels_for_spiketrain()
@@ -124,6 +149,7 @@ def create_labels_of_all_spiketrains(ground_truth, timestamps):
         labels = create_labels_for_spiketrain(timestamps, ground_truth[i])
         labels_of_all_spiketrains.append(labels)
     return np.array(labels_of_all_spiketrains)
+
 
 def assign_neuron_locations_to_electrode_locations(electrode_locations, neuron_locations, threshold):
     """
@@ -142,7 +168,8 @@ def assign_neuron_locations_to_electrode_locations(electrode_locations, neuron_l
     neuron_locations_df = pd.DataFrame(neuron_locations)
 
     # Compute the distance between each electrode location and each neuron location
-    distances = np.sqrt(((electrode_locations_df.values[:, np.newaxis, :] - neuron_locations_df.values)**2).sum(axis=2))
+    distances = np.sqrt(
+        ((electrode_locations_df.values[:, np.newaxis, :] - neuron_locations_df.values) ** 2).sum(axis=2))
 
     # Create an empty DataFrame to store the results
     assignments = pd.DataFrame(index=electrode_locations_df.index, columns=neuron_locations_df.index, dtype=bool)
@@ -153,6 +180,7 @@ def assign_neuron_locations_to_electrode_locations(electrode_locations, neuron_l
         assignments.iloc[:, i] = mask
 
     return assignments
+
 
 def merge_data_to_location_assignments(assignments, signal_raw, labels_of_all_spiketrains, timestamps):
     """
@@ -187,6 +215,7 @@ def merge_data_to_location_assignments(assignments, signal_raw, labels_of_all_sp
         merged_data.append([signal_raw[i], merged.astype(int), timestamps])
     return np.array(merged_data)
 
+
 def devide_3_vectors_into_equal_windows_with_step(x1, x2, x3, window_size, step_size=None):
     """
     Devides vectors x1, x2, x3 into windows with one window_size. step_size is used to generate more windows with overlap.
@@ -212,6 +241,7 @@ def devide_3_vectors_into_equal_windows_with_step(x1, x2, x3, window_size, step_
         x3_windows.append(x3[i:i + window_size])
     return x1_windows, x2_windows, x3_windows
 
+
 def application_of_windowing(merged_data, window_size, step_size=None):
     """
     Application of windowing
@@ -225,10 +255,12 @@ def application_of_windowing(merged_data, window_size, step_size=None):
 
     frame = []
     for i in range(len(merged_data)):
-        win1, win2, win3 = devide_3_vectors_into_equal_windows_with_step(merged_data[i][0], merged_data[i][1], merged_data[i][2], window_size, step_size)
+        win1, win2, win3 = devide_3_vectors_into_equal_windows_with_step(merged_data[i][0], merged_data[i][1],
+                                                                         merged_data[i][2], window_size, step_size)
         for l in range(len(win1)):
             frame.append(np.array([win1[l], win2[l], win3[l], i], dtype=object))
     return np.array(frame)
+
 
 def application_of_windowing_v2(merged_data, window_size, step_size=None, feature_calculation=False):
     """
@@ -292,6 +324,7 @@ def application_of_windowing_v2(merged_data, window_size, step_size=None, featur
 
     return frame
 
+
 def calculate_features(window_data, calculate=False):
     """
     Calculates features for input data.
@@ -313,6 +346,7 @@ def calculate_features(window_data, calculate=False):
     elif calculate is False:
         return np.zeros((1,))
 
+
 def label_a_window_from_labels_of_a_window(window_data):
     """
     Finds the max value of input data and returns it as integer. Input data of labels of a window should only be 0s and 1s.
@@ -323,6 +357,7 @@ def label_a_window_from_labels_of_a_window(window_data):
     label = int(np.max(window_data))
     return label
 
+
 def count_indexes_up_to_value(arr, value):
     import numpy as np
     # Find the indexes where the array values are less than or equal to the specified value
@@ -330,6 +365,8 @@ def count_indexes_up_to_value(arr, value):
     # Count the number of indexes
     count = len(indexes)
     return count
+
+
 def get_window_size_in_index_count(timestamps, window_size_in_sec):
     """
     calculate window size in index counts from defined windowsize (in sec)
@@ -339,6 +376,7 @@ def get_window_size_in_index_count(timestamps, window_size_in_sec):
     """
     window_size_in_count = count_indexes_up_to_value(timestamps, window_size_in_sec)
     return window_size_in_count - 1
+
 
 def preprocessing_for_one_recording(path, window_size_in_sec=0.001):
     """
@@ -351,11 +389,14 @@ def preprocessing_for_one_recording(path, window_size_in_sec=0.001):
     signal_raw, timestamps, ground_truth, electrode_locations, neuron_locations = import_recording_h5(path)
     labels_of_all_spiketrains = create_labels_of_all_spiketrains(ground_truth, timestamps)
     assignments = assign_neuron_locations_to_electrode_locations(electrode_locations, neuron_locations, 20)
-    merged_data = merge_data_to_location_assignments(assignments, signal_raw.transpose(), labels_of_all_spiketrains, timestamps)
+    merged_data = merge_data_to_location_assignments(assignments, signal_raw.transpose(), labels_of_all_spiketrains,
+                                                     timestamps)
     window_size_in_counts = get_window_size_in_index_count(timestamps, window_size_in_sec)
-    frame = application_of_windowing_v2(merged_data=merged_data, window_size=window_size_in_counts, step_size=None, feature_calculation=False)
+    frame = application_of_windowing_v2(merged_data=merged_data, window_size=window_size_in_counts, step_size=None,
+                                        feature_calculation=False)
     print('preprocessing finished for:', path)
     return frame
+
 
 def preprocessing_for_multiple_recordings(path):
     """
@@ -378,18 +419,6 @@ def preprocessing_for_multiple_recordings(path):
     print('preprocessing finished for:', path)
     return frame_of_multiple_recordings
 
-def save_frame_to_disk(frame, path_target):
-    import numpy as np
-    print('started saving frame to disk')
-    np.save(path_target, frame, allow_pickle=True)
-    print('frame saved to disk')
-
-def load_frame_from_disk(path_source):
-    import numpy as np
-    print('started loading frame from disk')
-    frame = np.load(path_source, allow_pickle=True)
-    print('frame loaded from disk')
-    return frame
 
 def normalize_frame(frame, scaler_type='minmax'):
     """
@@ -414,13 +443,190 @@ def normalize_frame(frame, scaler_type='minmax'):
     print(f"Normalization with scaler type '{scaler_type}' started")
     for i in frame:
         data_raw = i[0]
-        data_norm = scaler.fit_transform(data_raw.reshape(-1,1))
+        data_norm = scaler.fit_transform(data_raw.reshape(-1, 1))
         i[0] = data_norm.flatten()
     print(f"Normalization with scaler type '{scaler_type}' finished")
     return frame
 
+
+# preparation from preprocessing to data loader
+def splitting_data_into_train_test_val_set(data, labels, test_and_val_size=0.4, val_size_of_test_and_val_size=0.5):
+    """
+    Splits data and labels into training, test and validation set.
+    :param data: input set which contains data
+    :param labels: input set which contains labels for data
+    :param test_and_val_size: size of test and validation set combined. Rest equals training set.
+    :param val_size_of_test_and_val_size: size of validation set corresponding to test_and_val_size. Rest equals test set.
+    :return: training, test and validation set for data and labels
+    """
+    from sklearn.model_selection import train_test_split
+    X = data
+    y = labels
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_and_val_size, stratify=y)
+    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=val_size_of_test_and_val_size,
+                                                    stratify=y_test)
+    return x_train, y_train, x_test, y_test, x_val, y_val
+
+
+def balancing_dataset_with_undersampling(data, labels, verbose=True):
+    """
+    balancing dataset with random undersampling with sampling strategy 'majority'
+    :param data: input data
+    :param labels: corresponding labels for input data.
+    :param verbose: Using print(). Default: True.
+    :return: balanced data and labels (unshuffeled)
+    """
+    from imblearn.under_sampling import RandomUnderSampler
+    if verbose:
+        print('balancing started')
+    undersample = RandomUnderSampler(sampling_strategy='majority')
+    data_result, labels_result = undersample.fit_resample(data, labels)
+    if verbose:
+        print('balancing finished')
+    return data_result, labels_result
+
+
+def cropping_dataset(data, labels, cropping_size):
+    """
+    crop dataset to size of cropping_size to a subset
+    :param data: input data
+    :param labels: corresponding labels for input data.
+    :param cropping_size: float between 0 and 1. proportion of resulting dataset from input dataset
+    :return: cropped data and cropped labels
+    """
+    from sklearn.model_selection import train_test_split
+    X = data
+    y = labels
+    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=cropping_size, stratify=y)
+    return x_test, y_test
+
+
+def dataset_pipeline_for_training_process(frame, verbose=True):
+    """
+    pipeline for splitting, balancing and cropping datasets for training process
+    :param frame: input ndarray which contains data and corresponding labels
+    :param verbose: (bool) Default True. Prints proportions.
+    :return: undersampled training set, cropped test set, cropped validation set
+    """
+    # init
+    data = frame['signals']
+    labels = frame['label_per_window']
+    # splitting data
+    x_train, y_train, x_test, y_test, x_val, y_val = splitting_data_into_train_test_val_set(data, labels)
+
+    if verbose:
+        print('frame: spikes:', labels.sum(), 'total:', len(labels))
+        print('train: spikes:', y_train.sum(), 'total:', len(y_train))
+        print('test: spikes:', y_test.sum(), 'total:', len(y_test))
+        print('val: spikes:', y_val.sum(), 'total:', len(y_val))
+
+    # undersample training set
+    x_train_res, y_train_res = balancing_dataset_with_undersampling(x_train, y_train, verbose)
+    # calculation of cropping size
+    spikes_per_frame = (labels.sum()) / (len(labels))
+    # cropping test set
+    x_test_crp, y_test_crp = cropping_dataset(x_test, y_test, spikes_per_frame)
+    # cropping validation set
+    x_val_crp, y_val_crp = cropping_dataset(x_val, y_val, spikes_per_frame)
+
+    if verbose:
+        print('spikes_per_frame:', spikes_per_frame)
+        print('train_res: spikes:', y_train_res.sum(), 'total:', len(y_train_res))
+        print('test_crp: spikes:', y_test_crp.sum(), 'total:', len(y_test_crp))
+        print('val_crp: spikes:', y_val_crp.sum(), 'total:', len(y_val_crp))
+
+    return x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp
+
+
+def loading_and_stacking_frame(path, vstack=False):
+    """
+    loads multiple frames (.npy-files) from disk and stacks them to one frame
+    :param path: path to directory where frames are located. Only .npy-files with the same object types and structure are allowed.
+    :param vstack: bool. Defines stacking method (vstack or hstack). Default: False.
+    :return: stacked_frame
+    """
+    from pathlib import Path
+    import numpy as np
+    frames = [p for p in Path(path).iterdir()]
+    stacked_frame = None
+    for frm in frames:
+        one_frame = load_frame_from_disk(frm)
+        if stacked_frame is None:
+            stacked_frame = one_frame.copy()
+        else:
+            if vstack is True:
+                stacked_frame = np.vstack((stacked_frame, one_frame))
+            elif vstack is False:
+                stacked_frame = np.hstack((stacked_frame, one_frame))
+    return stacked_frame
+
+
+def dataset_pipeline_creating_even_larger_datasets(path_source, path_target=None, verbose=False):
+    """
+    Pipeline for creating even larger datasets for training process. Function uses dataset_pipeline_for_training_process()
+    for splitting, balancing and cropping datasets.
+    :param path_source: path to directory where frames are located. Only .npy-files with the same object types and
+        structure are allowed. Data has to be in 'frame['signals']' and labels in 'frame['label_per_window']'.
+        See for further requirements in dataset_pipeline_for_training_process().
+    :param path_target: path to directory where results have to be saved to disk as .npy-files.
+        Default None, so that no saving is done.
+    :param verbose: Make used functions verbose. Default: false.
+    :return: undersampled training set, cropped test set, cropped validation set from input frames
+    """
+    import os
+    from pathlib import Path
+    import numpy as np
+
+    print('pipeline starts now, take a coffee :-) ')
+    frames = [p for p in Path(path_source).iterdir()]
+
+    frames_x_train_res = None
+    frames_y_train_res = None
+    frames_x_test_crp = None
+    frames_y_test_crp = None
+    frames_x_val_crp = None
+    frames_y_val_crp = None
+
+    for frm in frames:
+        print('current frame:', frm)
+        one_frame = load_frame_from_disk(frm)
+        x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp = dataset_pipeline_for_training_process(
+            one_frame, verbose)
+        if frames_x_train_res is None:
+            frames_x_train_res = x_train_res.copy()
+            frames_y_train_res = y_train_res.copy()
+            frames_x_test_crp = x_test_crp.copy()
+            frames_y_test_crp = y_test_crp.copy()
+            frames_x_val_crp = x_val_crp.copy()
+            frames_y_val_crp = y_val_crp.copy()
+
+        else:
+            frames_x_train_res = np.vstack((frames_x_train_res, x_train_res))
+            frames_y_train_res = np.hstack((frames_y_train_res, y_train_res))
+            frames_x_test_crp = np.vstack((frames_x_test_crp, x_test_crp))
+            frames_y_test_crp = np.hstack((frames_y_test_crp, y_test_crp))
+            frames_x_val_crp = np.vstack((frames_x_val_crp, x_val_crp))
+            frames_y_val_crp = np.hstack((frames_y_val_crp, y_val_crp))
+    print('stacking finished')
+
+    if path_target is not None:
+        save_frame_to_disk(frames_x_train_res, os.path.join(path_target, 'frames_x_train_res.npy'))
+        save_frame_to_disk(frames_y_train_res, os.path.join(path_target, 'frames_y_train_res.npy'))
+        save_frame_to_disk(frames_x_test_crp, os.path.join(path_target, 'frames_x_test_crp.npy'))
+        save_frame_to_disk(frames_y_test_crp, os.path.join(path_target, 'frames_y_test_crp.npy'))
+        save_frame_to_disk(frames_x_val_crp, os.path.join(path_target, 'frames_x_val_crp.npy'))
+        save_frame_to_disk(frames_y_val_crp, os.path.join(path_target, 'frames_y_val_crp.npy'))
+        print('successfully saved frames to disk in path:', path_target)
+    else:
+        print('no saving is done, continuing with returned arrays')
+    return frames_x_train_res, frames_y_train_res, frames_x_test_crp, frames_y_test_crp, frames_x_val_crp, frames_y_val_crp
+
+
+# data loader
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms
+
+
 class WindowedFrameDataset(Dataset):
     """
     A PyTorch dataset that represents windowed frames of data and their labels.
@@ -464,6 +670,7 @@ class WindowedFrameDataset(Dataset):
     batch_size = 32
     windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
     """
+
     def __init__(self, data, labels):
         self.data = data.astype('float32')
         self.transform = transforms.Compose([transforms.ToTensor()])
@@ -477,6 +684,7 @@ class WindowedFrameDataset(Dataset):
         labels = self.labels[idx]
         return data, labels
 
+
 def create_dataloader(frame, batch_size=32):
     from torch.utils.data import DataLoader
     time_rows = frame['signals']  #frame[:, 0]
@@ -485,171 +693,10 @@ def create_dataloader(frame, batch_size=32):
     windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True)
     return windowed_frame_dataloader
 
+
 def create_dataloader_simple(data, labels, batch_size=32):
     from torch.utils.data import DataLoader
     time_rows = data
     windowed_frame_dataset = WindowedFrameDataset(time_rows, labels)
     windowed_frame_dataloader = DataLoader(windowed_frame_dataset, batch_size=batch_size, shuffle=True, drop_last=True)
     return windowed_frame_dataloader
-
-def splitting_data_into_train_test_val_set(data, labels, test_and_val_size=0.4, val_size_of_test_and_val_size=0.5):
-    """
-    Splits data and labels into training, test and validation set.
-    :param data: input set which contains data
-    :param labels: input set which contains labels for data
-    :param test_and_val_size: size of test and validation set combined. Rest equals training set.
-    :param val_size_of_test_and_val_size: size of validation set corresponding to test_and_val_size. Rest equals test set.
-    :return: training, test and validation set for data and labels
-    """
-    from sklearn.model_selection import train_test_split
-    X = data
-    y = labels
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=test_and_val_size, stratify=y)
-    x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=val_size_of_test_and_val_size, stratify=y_test)
-    return x_train, y_train, x_test, y_test, x_val, y_val
-
-def balancing_dataset_with_undersampling(data, labels, verbose=True):
-    """
-    balancing dataset with random undersampling with sampling strategy 'majority'
-    :param data: input data
-    :param labels: corresponding labels for input data.
-    :return: balanced data and labels (unshuffeled)
-    """
-    from imblearn.under_sampling import RandomUnderSampler
-    if verbose:
-        print('balancing started')
-    undersample = RandomUnderSampler(sampling_strategy='majority')
-    data_result, labels_result = undersample.fit_resample(data, labels)
-    if verbose:
-        print('balancing finished')
-    return data_result, labels_result
-
-def cropping_dataset(data, labels, cropping_size):
-    """
-    crop dataset to size of cropping_size to a subset
-    :param data: input data
-    :param labels: corresponding labels for input data.
-    :param cropping_size: float between 0 and 1. proportion of resulting dataset from input dataset
-    :return: cropped data and cropped labels
-    """
-    from sklearn.model_selection import train_test_split
-    X = data
-    y = labels
-    x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=cropping_size, stratify=y)
-    return x_test, y_test
-
-def dataset_pipeline_for_training_process(frame, verbose=True):
-    """
-    pipeline for splitting, balancing and cropping datasets for training process
-    :param frame: input ndarray which contains data and corresponding labels
-    :param verbose: (bool) Default True. Prints proportions.
-    :return: undersampled training set, cropped test set, cropped validation set
-    """
-    # init
-    data = frame['signals']
-    labels = frame['label_per_window']
-    # splitting data
-    x_train, y_train, x_test, y_test, x_val, y_val = splitting_data_into_train_test_val_set(data, labels)
-
-    if verbose:
-        print('frame: spikes:', labels.sum(), 'total:', len(labels))
-        print('train: spikes:', y_train.sum(), 'total:', len(y_train))
-        print('test: spikes:', y_test.sum(), 'total:', len(y_test))
-        print('val: spikes:', y_val.sum(), 'total:', len(y_val))
-
-    # undersample training set
-    x_train_res, y_train_res = balancing_dataset_with_undersampling(x_train, y_train, verbose)
-    # calculation of cropping size
-    spikes_per_frame = (labels.sum()) / (len(labels))
-    # cropping test set
-    x_test_crp, y_test_crp = cropping_dataset(x_test, y_test, spikes_per_frame)
-    # cropping validation set
-    x_val_crp, y_val_crp = cropping_dataset(x_val, y_val, spikes_per_frame)
-
-    if verbose:
-        print('spikes_per_frame:', spikes_per_frame)
-        print('train_res: spikes:', y_train_res.sum(), 'total:', len(y_train_res))
-        print('test_crp: spikes:', y_test_crp.sum(), 'total:', len(y_test_crp))
-        print('val_crp: spikes:', y_val_crp.sum(), 'total:', len(y_val_crp))
-
-    return x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp
-
-def loading_and_stacking_frame(path, vstack=False):
-    """
-    loads multiple frames (.npy-files) from disk and stacks them to one frame
-    :param path: path to directory where frames are located. Only .npy-files with the same object types and structure are allowed.
-    :param vstack: bool. Defines stacking method (vstack or hstack). Default: False.
-    :return: stacked_frame
-    """
-    from pathlib import Path
-    import numpy as np
-    frames = [p for p in Path(path).iterdir()]
-    stacked_frame = None
-    for frm in frames:
-        one_frame = load_frame_from_disk(frm)
-        if stacked_frame is None:
-            stacked_frame = one_frame.copy()
-        else:
-            if vstack is True:
-                stacked_frame = np.vstack((stacked_frame, one_frame))
-            elif vstack is False:
-                stacked_frame = np.hstack((stacked_frame, one_frame))
-    return stacked_frame
-
-def dataset_pipeline_creating_even_larger_datasets(path_source, path_target=None, verbose=False):
-    """
-    Pipeline for creating even larger datasets for training process. Function uses dataset_pipeline_for_training_process()
-    for splitting, balancing and cropping datasets.
-    :param path_source: path to directory where frames are located. Only .npy-files with the same object types and
-        structure are allowed. Data has to be in 'frame['signals']' and labels in 'frame['label_per_window']'.
-        See for further requirements in dataset_pipeline_for_training_process().
-    :param path_target: path to directory where results have to be saved to disk as .npy-files.
-        Default None, so that no saving is done.
-    :return: undersampled training set, cropped test set, cropped validation set from input frames
-    """
-    import os
-    from pathlib import Path
-    import numpy as np
-
-    print('pipeline starts now, take a coffee :-) ')
-    frames = [p for p in Path(path_source).iterdir()]
-
-    frames_x_train_res = None
-    frames_y_train_res = None
-    frames_x_test_crp = None
-    frames_y_test_crp = None
-    frames_x_val_crp = None
-    frames_y_val_crp = None
-
-    for frm in frames:
-        print('current frame:', frm)
-        one_frame = load_frame_from_disk(frm)
-        x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp = dataset_pipeline_for_training_process(one_frame, verbose)
-        if frames_x_train_res is None:
-            frames_x_train_res = x_train_res.copy()
-            frames_y_train_res = y_train_res.copy()
-            frames_x_test_crp = x_test_crp.copy()
-            frames_y_test_crp = y_test_crp.copy()
-            frames_x_val_crp = x_val_crp.copy()
-            frames_y_val_crp = y_val_crp.copy()
-
-        else:
-            frames_x_train_res = np.vstack((frames_x_train_res, x_train_res))
-            frames_y_train_res = np.hstack((frames_y_train_res, y_train_res))
-            frames_x_test_crp = np.vstack((frames_x_test_crp, x_test_crp))
-            frames_y_test_crp = np.hstack((frames_y_test_crp, y_test_crp))
-            frames_x_val_crp = np.vstack((frames_x_val_crp, x_val_crp))
-            frames_y_val_crp = np.hstack((frames_y_val_crp, y_val_crp))
-    print('stacking finished')
-
-    if path_target is not None:
-        save_frame_to_disk(frames_x_train_res, os.path.join(path_target, 'frames_x_train_res.npy'))
-        save_frame_to_disk(frames_y_train_res, os.path.join(path_target, 'frames_y_train_res.npy'))
-        save_frame_to_disk(frames_x_test_crp, os.path.join(path_target, 'frames_x_test_crp.npy'))
-        save_frame_to_disk(frames_y_test_crp, os.path.join(path_target, 'frames_y_test_crp.npy'))
-        save_frame_to_disk(frames_x_val_crp, os.path.join(path_target, 'frames_x_val_crp.npy'))
-        save_frame_to_disk(frames_y_val_crp, os.path.join(path_target, 'frames_y_val_crp.npy'))
-        print('successfully saved frames to disk in path:', path_target)
-    else:
-        print('no saving is done, continuing with returned arrays')
-    return frames_x_train_res, frames_y_train_res, frames_x_test_crp, frames_y_test_crp, frames_x_val_crp, frames_y_val_crp

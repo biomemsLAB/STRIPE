@@ -508,7 +508,7 @@ def splitting_data_into_train_test_val_set(data, labels, test_and_val_size=0.4, 
     x_test, x_val, y_test, y_val = train_test_split(x_test, y_test, test_size=val_size_of_test_and_val_size, stratify=y_test)
     return x_train, y_train, x_test, y_test, x_val, y_val
 
-def balancing_dataset_with_undersampling(data, labels):
+def balancing_dataset_with_undersampling(data, labels, verbose=True):
     """
     balancing dataset with random undersampling with sampling strategy 'majority'
     :param data: input data
@@ -516,10 +516,12 @@ def balancing_dataset_with_undersampling(data, labels):
     :return: balanced data and labels (unshuffeled)
     """
     from imblearn.under_sampling import RandomUnderSampler
-    print('balancing started')
+    if verbose:
+        print('balancing started')
     undersample = RandomUnderSampler(sampling_strategy='majority')
     data_result, labels_result = undersample.fit_resample(data, labels)
-    print('balancing finished')
+    if verbose:
+        print('balancing finished')
     return data_result, labels_result
 
 def cropping_dataset(data, labels, cropping_size):
@@ -556,7 +558,7 @@ def dataset_pipeline_for_training_process(frame, verbose=True):
         print('val: spikes:', y_val.sum(), 'total:', len(y_val))
 
     # undersample training set
-    x_train_res, y_train_res = balancing_dataset_with_undersampling(x_train, y_train)
+    x_train_res, y_train_res = balancing_dataset_with_undersampling(x_train, y_train, verbose)
     # calculation of cropping size
     spikes_per_frame = (labels.sum()) / (len(labels))
     # cropping test set
@@ -571,3 +573,4 @@ def dataset_pipeline_for_training_process(frame, verbose=True):
         print('val_crp: spikes:', y_val_crp.sum(), 'total:', len(y_val_crp))
 
     return x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp
+

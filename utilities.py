@@ -595,3 +595,61 @@ def loading_and_stacking_frame(path, vstack=False):
             elif vstack is False:
                 stacked_frame = np.hstack((stacked_frame, one_frame))
     return stacked_frame
+
+def dataset_pipeline_creating_even_larger_datasets(path_source, path_target=None, verbose=False):
+    """
+    Pipeline for creating even larger datasets for training process. Function uses dataset_pipeline_for_training_process()
+    for splitting, balancing and cropping datasets.
+    :param path_source: path to directory where frames are located. Only .npy-files with the same object types and
+        structure are allowed. Data has to be in 'frame['signals']' and labels in 'frame['label_per_window']'.
+        See for further requirements in dataset_pipeline_for_training_process().
+    :param path_target: path to directory where results have to be saved to disk as .npy-files.
+        Default None, so that no saving is done.
+    :return: undersampled training set, cropped test set, cropped validation set from input frames
+    """
+    import os
+    from pathlib import Path
+    import numpy as np
+
+    print('pipeline starts now, take a coffee :-) ')
+    frames = [p for p in Path(path_source).iterdir()]
+
+    frames_x_train_res = None
+    frames_y_train_res = None
+    frames_x_test_crp = None
+    frames_y_test_crp = None
+    frames_x_val_crp = None
+    frames_y_val_crp = None
+
+    for frm in frames:
+        print('current frame:', frm)
+        one_frame = load_frame_from_disk(frm)
+        x_train_res, y_train_res, x_test_crp, y_test_crp, x_val_crp, y_val_crp = dataset_pipeline_for_training_process(one_frame, verbose)
+        if frames_x_train_res is None:
+            frames_x_train_res = x_train_res.copy()
+            frames_y_train_res = y_train_res.copy()
+            frames_x_test_crp = x_test_crp.copy()
+            frames_y_test_crp = y_test_crp.copy()
+            frames_x_val_crp = x_val_crp.copy()
+            frames_y_val_crp = y_val_crp.copy()
+
+        else:
+            frames_x_train_res = np.vstack((frames_x_train_res, x_train_res))
+            frames_y_train_res = np.hstack((frames_y_train_res, y_train_res))
+            frames_x_test_crp = np.vstack((frames_x_test_crp, x_test_crp))
+            frames_y_test_crp = np.hstack((frames_y_test_crp, y_test_crp))
+            frames_x_val_crp = np.vstack((frames_x_val_crp, x_val_crp))
+            frames_y_val_crp = np.hstack((frames_y_val_crp, y_val_crp))
+    print('stacking finished')
+
+    if path_target is not None:
+        save_frame_to_disk(frames_x_train_res, os.path.join(path_target, 'frames_x_train_res.npy'))
+        save_frame_to_disk(frames_y_train_res, os.path.join(path_target, 'frames_y_train_res.npy'))
+        save_frame_to_disk(frames_x_test_crp, os.path.join(path_target, 'frames_x_test_crp.npy'))
+        save_frame_to_disk(frames_y_test_crp, os.path.join(path_target, 'frames_y_test_crp.npy'))
+        save_frame_to_disk(frames_x_val_crp, os.path.join(path_target, 'frames_x_val_crp.npy'))
+        save_frame_to_disk(frames_y_val_crp, os.path.join(path_target, 'frames_y_val_crp.npy'))
+        print('successfully saved frames to disk in path:', path_target)
+    else:
+        print('no saving is done, continuing with returned arrays')
+    return frames_x_train_res, frames_y_train_res, frames_x_test_crp, frames_y_test_crp, frames_x_val_crp, frames_y_val_crp

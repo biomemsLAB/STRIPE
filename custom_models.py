@@ -112,7 +112,7 @@ class Transformer(nn.Module):
 
 
 class ViT(nn.Module):
-    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, channels=3):
+    def __init__(self, *, image_size, patch_size, num_classes, dim, depth, heads, mlp_dim, channels=3, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
         super().__init__()
         assert image_size % patch_size == 0, 'image dimensions must be divisible by the patch size'
         num_patches = (image_size // patch_size) ** 2

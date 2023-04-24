@@ -81,7 +81,7 @@ def compare_models_acc_over_epoch(train_dataloader, eval_dataloader, test_datalo
     epochs = epochs
     learning_rate = learning_rate
     for model_runner in model_handlers:
-        model_runner.run(epochs=epochs, learning_rate=learning_rate)
+        model_runner.run(epochs=epochs, learning_rate=learning_rate, path_to_save=path_to_save)
         train_acc_list.append(model_runner.train_acc)
         eval_acc_list.append(model_runner.eval_acc)
         train_loss_list.append(model_runner.train_loss)

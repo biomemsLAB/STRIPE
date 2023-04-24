@@ -54,10 +54,17 @@ class handle_model():
         self.final_avg_test_loss = []
         self.final_avg_test_loss_with_epoch = []
 
-        self.name_of_model = model.__class__.__name__
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    def run(self, epochs=5, learning_rate=1e-3, loss_fn=nn.CrossEntropyLoss()):
+        self.best_train_acc = 0
+        self.best_eval_acc = 0
+        self.best_test_acc = 0
+
+        self.avg_tet_acc = 0
+
+        self.name_of_model = model.__class__.__name__
+        self.device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+
+    def run(self, epochs=5, learning_rate=1e-3, loss_fn=nn.CrossEntropyLoss(), path_to_save=""):
         """
         Trains and tests the model on provided datasets for specified number of epochs.
         """
@@ -85,6 +92,13 @@ class handle_model():
                 break
             print("\n")
         self.test(self.test_dataloader)
+        self.best_train_acc = max(self.train_acc)
+        self.best_eval_acc = max(self.eval_acc)
+        self.best_test_acc = max(self.test_acc)
+        from statistics import mean
+        self.avg_tet_acc = mean([self.best_train_acc, self.best_eval_acc, self.best_test_acc])
+        path_json = path_to_save + str(self.model) + ".json"
+        self.save_json(path_json)
 
         print("Done!")
     def train(self, dataloader):
@@ -240,3 +254,49 @@ class handle_model():
         sns.lineplot(data=df, x=df.Epoch, y=df.Accuracy, ax=axes)
         plt.savefig(save_string)
         plt.close()
+
+    def save_json(self, filename):
+        """
+        Speichert alle wichtigen self-Parameter in einer JSON-Datei.
+
+        Args:
+        filename (str): Name der Datei, in der die Daten gespeichert werden sollen.
+
+        Returns:
+        None
+        """
+        import json
+        with open(filename, 'w') as f:
+            json.dump({
+                'train_dataloader': self.train_dataloader.dataset,
+                'test_dataloader': self.test_dataloader.dataset,
+                'eval_dataloader': self.eval_dataloader.dataset,
+                'model': str(self.model),
+                'model_info': str(self.model_info),
+                'train_acc': self.train_acc,
+                'train_acc_with_epoch': self.train_acc_with_epoch,
+                'eval_acc': self.eval_acc,
+                'eval_acc_with_epoch': self.eval_acc_with_epoch,
+                'test_acc': self.test_acc,
+                'test_acc_with_epoch': self.test_acc_with_epoch,
+                'train_loss': self.train_loss,
+                'train_loss_with_epoch': self.train_loss_with_epoch,
+                'avg_train_loss': self.avg_train_loss,
+                'avg_train_loss_with_epoch': self.avg_train_loss_with_epoch,
+                'avg_eval_loss': self.avg_eval_loss,
+                'avg_eval_loss_with_epoch': self.avg_eval_loss_with_epoch,
+                'final_avg_test_loss': self.final_avg_test_loss,
+                'final_avg_test_loss_with_epoch': self.final_avg_test_loss_with_epoch,
+                'best_train_acc': self.best_train_acc,
+                'best_eval_acc': self.best_eval_acc,
+                'best_test_acc': self.best_test_acc,
+                'avg_tet_acc': self.avg_tet_acc,
+                'name_of_model': self.name_of_model,
+                'device': str(self.device),
+                'epochs': self.epochs,
+                'learing_rate': self.learing_rate,
+                'loss_fn': str(self.loss_fn),
+                'optimizer': str(self.optimizer),
+                'scheduler': str(self.scheduler),
+                'early_stopper': str(self.early_stopper)
+            }, f, indent=4)

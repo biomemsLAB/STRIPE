@@ -3,8 +3,9 @@ if __name__ == '__main__':
     print("Welcome to STRIPE")
 
     # init
-    from utilities import create_dataloader_simple, loading_numpy_datasets_for_training
+    from utilities import create_dataloader_simple, loading_numpy_datasets_for_training, create_directory_structure
     path_to_working_dir = '/mnt/MainNAS/BioMemsLaborNAS/Projekt_Ordner/STRIPE'
+    create_directory_structure(path_to_working_dir)
 
     # loading preprocessed numpy arrays
     data_train_balanced, label_train_balanced, data_test, label_test, data_val, label_val = loading_numpy_datasets_for_training(path_to_working_dir)

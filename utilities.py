@@ -17,7 +17,10 @@ def create_directory_structure(path):
         "data/raw/val",
         "data/raw/one",
         "data/save/after_normalization",
-        "data/save/before_normalization"
+        "data/save/before_normalization",
+        "data/prepared_for_training",
+        "data/debug/prepared_for_training",
+        "results"
     ]
 
     # Check if each directory in the structure exists, and create it if it doesn't

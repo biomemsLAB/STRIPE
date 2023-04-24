@@ -19,7 +19,7 @@ def create_directory_structure(path):
         "data/save/after_normalization",
         "data/save/before_normalization",
         "data/prepared_for_training",
-        "data/debug/prepared_for_training",
+        "debug/data/prepared_for_training",
         "results"
     ]
 

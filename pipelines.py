@@ -33,7 +33,7 @@ def dataset_pipeline_generate_debug_dataset(path_to_working_dir, cropping_size=0
     print('test: spikes:', label_test_debug.sum(), 'total:', len(label_test_debug))
     print('val: spikes:', label_val_debug.sum(), 'total:', len(label_val_debug))
 
-    path_debug = 'data/debug/prepared_for_training'
+    path_debug = 'debug/data/prepared_for_training'
 
     save_frame_to_disk(data_train_balanced_debug, os.path.join(path_to_working_dir, path_debug, 'frames_x_train_res.npy'))
     save_frame_to_disk(label_train_balanced_debug, os.path.join(path_to_working_dir, path_debug, 'frames_y_train_res.npy'))

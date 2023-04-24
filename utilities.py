@@ -622,6 +622,19 @@ def dataset_pipeline_creating_even_larger_datasets(path_source, path_target=None
     return frames_x_train_res, frames_y_train_res, frames_x_test_crp, frames_y_test_crp, frames_x_val_crp, frames_y_val_crp
 
 
+def loading_numpy_datasets_for_training(path_to_working_dir):
+    import os
+    # loading preprocessed numpy arrays
+    frames_x_train_res = load_frame_from_disk(os.path.join(path_to_working_dir, 'data', 'frames_x_train_res.npy') )
+    frames_y_train_res = load_frame_from_disk(os.path.join(path_to_working_dir, 'data', 'frames_y_train_res.npy'))
+    frames_x_test_crp = load_frame_from_disk(os.path.join(path_to_working_dir, 'data', 'frames_x_test_crp.npy'))
+    frames_y_test_crp = load_frame_from_disk(os.path.join(path_to_working_dir, 'data', 'frames_y_test_crp.npy'))
+    frames_x_val_crp = load_frame_from_disk(os.path.join(path_to_working_dir, 'data', 'frames_x_val_crp.npy'))
+    frames_y_val_crp = load_frame_from_disk(os.path.join(path_to_working_dir, 'data', 'frames_y_val_crp.npy'))
+
+    return frames_x_train_res, frames_y_train_res, frames_x_test_crp, frames_y_test_crp, frames_x_val_crp, frames_y_val_crp
+
+
 # data loader
 from torch.utils.data import Dataset, DataLoader
 import torchvision.transforms as transforms

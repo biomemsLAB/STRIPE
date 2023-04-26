@@ -17,12 +17,13 @@ class DenseModel(nn.Module):
         self.fc1 = nn.Linear(in_features, hidden_features)
         self.fc2 = nn.Linear(hidden_features, hidden_features)
         self.fc3 = nn.Linear(hidden_features, out_features)
+        self.selu = nn.SELU()
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         # flatten_tensor = self.flatten(input_tensor)
-        fc1_out = self.fc1(input_tensor)
-        fc2_out = self.fc2(fc1_out)
-        fc3_out = self.fc3(fc2_out)
+        fc1_out = self.selu(self.fc1(input_tensor))
+        fc2_out = self.selu(self.fc2(fc1_out))
+        fc3_out = self.selu(self.fc3(fc2_out))
         return fc3_out
 
 import numpy as np
@@ -241,14 +242,14 @@ class LSTM_Model(nn.Module):
         self.lstm_1 = nn.LSTM(hidden_features, hidden_features, num_layers, batch_first=True)
         self.lstm_2 = nn.LSTM(hidden_features, hidden_features, num_layers, batch_first=True)
         self.fc_2 = nn.Linear(hidden_features, out_features)
-        self.relu = nn.SELU()
+        self.selu = nn.SELU()
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         # h0 = torch.zeros(self.num_layers, input_tensor.size(0), self.hidden_features).to(self.device)
         h0 = torch.zeros(self.num_layers, self.hidden_features).to(self.device)
         c0 = torch.zeros(self.num_layers, self.hidden_features).to(self.device)
-        fc_1_out = self.relu(self.fc_1(input_tensor))
+        fc_1_out = self.selu(self.fc_1(input_tensor))
         lstm_1_out, _ = self.lstm_1(fc_1_out, (h0, c0))
         lstm_2_out, _ = self.lstm_2(lstm_1_out, (h0, c0))
-        fc_2_out = self.relu(self.fc_2(lstm_2_out))
+        fc_2_out = self.selu(self.fc_2(lstm_2_out))
         return fc_2_out

@@ -30,7 +30,7 @@ class handle_model():
     plot_training_acc(): Plots the training accuracy of the model with respect to the number of epochs.
 
     """
-    def __init__(self, model, train_dataloader, eval_dataloader, test_dataloader):
+    def __init__(self, model, train_dataloader, eval_dataloader, test_dataloader, device=torch.device('cuda' if torch.cuda.is_available() else 'cpu')):
         self.train_dataloader = train_dataloader
         self.test_dataloader = test_dataloader
         self.eval_dataloader = eval_dataloader
@@ -43,6 +43,7 @@ class handle_model():
         self.test_acc = []
         self.test_acc_with_epoch = []
         # self.training_loss = []
+        self.current_acc = 0
 
         self.train_loss = []
         self.train_loss_with_epoch = []
@@ -62,7 +63,9 @@ class handle_model():
         self.avg_tet_acc = 0
 
         self.name_of_model = model.__class__.__name__
-        self.device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+        self.device = device
+        self.path_to_save = ""
+        self.flag = True
 
     def run(self, epochs=5, learning_rate=1e-3, loss_fn=nn.CrossEntropyLoss(), path_to_save=""):
         """
@@ -73,15 +76,17 @@ class handle_model():
         self.epochs = epochs
         self.learing_rate = learning_rate
         self.loss_fn = loss_fn
+        self.path_to_save = path_to_save
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
         from nn_utilities import Lion
         self.optimizer = Lion(self.model.parameters(), lr=learning_rate)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, patience=5, verbose=False)
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, patience=4, verbose=False)
         self.early_stopper = EarlyStopper(patience=8, min_delta=0.008)
         try:
             self.model_info = summary(self.model, input_size=(self.batch_size, 10))
         except:
             print("Summary not working")
+        self.check_path()
         print(f"Running model")
         for self.epoch in range(self.epochs):
             print(f"Epoch {self.epoch + 1} of {self.name_of_model}\n-------------------------------")
@@ -90,15 +95,20 @@ class handle_model():
             self.evaluate(self.eval_dataloader)
             if self.early_stopper.early_stop(self.eval_loss):
                 break
-            print("\n")
+            if self.flag or self.current_acc > max(self.train_acc):
+                print("Model saved")
+                self.save_model()
+                self.flag = False
+        print("\n")
         self.test(self.test_dataloader)
         self.best_train_acc = max(self.train_acc)
         self.best_eval_acc = max(self.eval_acc)
         self.best_test_acc = max(self.test_acc)
         from statistics import mean
         self.avg_tet_acc = mean([self.best_train_acc, self.best_eval_acc, self.best_test_acc])
-        path_json = path_to_save + str(self.model) + ".json"
+        path_json = path_to_save + "/" + str(self.name_of_model) + ".json"
         self.save_json(path_json)
+
 
         print("Done!")
     def train(self, dataloader):
@@ -145,17 +155,20 @@ class handle_model():
         self.model.eval()
         check_train_loss, correct = 0, 0
         with torch.no_grad():
-            for X, y in dataloader:
-                X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
-                # y = y.squeeze(1)
-                pred = self.model(X)
-                check_train_loss += self.loss_fn(pred, y).item()
-                correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+            with alive_bar(total=len(dataloader), force_tty=True, title="Calculating Train accuracy:\t\t") as bar:
+                for X, y in dataloader:
+                    X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
+                    # y = y.squeeze(1)
+                    pred = self.model(X)
+                    check_train_loss += self.loss_fn(pred, y).item()
+                    correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                    bar()
         #self.scheduler.step(self.train_loss)
         check_train_loss /= num_batches
         correct /= size
         print(f"Train Error: \t\tAccuracy: {(100 * correct):>0.2f}%, average train loss: \t\t{check_train_loss:>8f}")
         self.train_acc.append(100 * correct)
+        self.current_acc = 100 * correct
         self.train_acc_with_epoch.append([self.epoch + 1, 100 * correct])
         self.avg_train_loss.append(check_train_loss)
         self.avg_train_loss_with_epoch.append([self.epoch, check_train_loss])
@@ -175,8 +188,7 @@ class handle_model():
         self.model.eval()
         self.eval_loss, correct = 0, 0
         with torch.no_grad():
-            print("Calculating evaluation Accuracy and average Loss")
-            with alive_bar(total=len(dataloader), force_tty=True) as bar:
+            with alive_bar(total=len(dataloader), force_tty=True, title="Calculating Eval accuracy:\t\t") as bar:
                 for X, y in dataloader:
                     X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
                     # y = y.squeeze(1)
@@ -209,7 +221,7 @@ class handle_model():
         test_loss, correct = 0, 0
         with torch.no_grad():
             print("Calculation Test Accuracy and average Loss")
-            with alive_bar(total=len(dataloader), force_tty=True) as bar:
+            with alive_bar(total=len(dataloader), force_tty=True, title="Calculating Test accuracy:\t\t") as bar:
                 for X, y in dataloader:
                     X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
                     # y = y.squeeze(1)
@@ -268,9 +280,9 @@ class handle_model():
         import json
         with open(filename, 'w') as f:
             json.dump({
-                'train_dataloader': self.train_dataloader.dataset,
-                'test_dataloader': self.test_dataloader.dataset,
-                'eval_dataloader': self.eval_dataloader.dataset,
+                # 'train_dataloader': self.train_dataloader.dataset,
+                # 'test_dataloader': self.test_dataloader.dataset,
+                # 'eval_dataloader': self.eval_dataloader.dataset,
                 'model': str(self.model),
                 'model_info': str(self.model_info),
                 'train_acc': self.train_acc,
@@ -300,3 +312,15 @@ class handle_model():
                 'scheduler': str(self.scheduler),
                 'early_stopper': str(self.early_stopper)
             }, f, indent=4)
+
+    def check_path(self):
+        import os
+        if not os.path.isdir(self.path_to_save):
+            os.mkdir(self.path_to_save)
+
+    def save_model(self):
+        model_path = self.path_to_save + "/" + self.name_of_model + ".pth"
+        torch.save(self.model, model_path)
+
+
+

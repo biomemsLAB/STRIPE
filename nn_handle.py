@@ -121,6 +121,12 @@ class handle_model():
         Returns:
         None
         """
+        from torchmetrics.classification import BinaryAccuracy, BinaryF1Score, BinaryAUROC, BinaryConfusionMatrix
+
+        metric_bacc = BinaryAccuracy().to(self.device)
+        metric_bf1 = BinaryF1Score().to(self.device)
+        metric_bauroc = BinaryAUROC(thresholds=None).to(self.device)
+        metric_bcm = BinaryConfusionMatrix().to(self.device)
 
         n_total_steps = len(dataloader)
         self.model.train()
@@ -162,11 +168,34 @@ class handle_model():
                     pred = self.model(X)
                     check_train_loss += self.loss_fn(pred, y).item()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+
+                    # metric calculation with torchmetrics
+                    bacc = metric_bacc(pred.argmax(1), y)
+                    bf1 = metric_bf1(pred.argmax(1), y)
+                    bauroc = metric_bauroc(pred.argmax(1), y)
+                    bcm = metric_bcm(pred.argmax(1), y)
+
                     bar()
         #self.scheduler.step(self.train_loss)
         check_train_loss /= num_batches
         correct /= size
         print(f"Train Error: \t\tAccuracy: {(100 * correct):>0.2f}%, average train loss: \t\t{check_train_loss:>8f}")
+
+        # metric calculation with torchmetrics
+        bacc_all_batches = metric_bacc.compute()
+        bf1_all_batches = metric_bf1.compute()
+        bauroc_all_batches = metric_bauroc.compute()
+        bcm_all_batches = metric_bcm.compute()
+        print(f"C/L\tBinaryAccuracy: {(100 * bacc):>0.2f}% \tF1-Score: {(100 * bf1):>0.2f}% \tBinaryAUROC: {(100 * bauroc):>0.2f}%") # current / last metric in batch
+        print(f"All\tBinaryAccuracy: {(100 * bacc_all_batches):>0.2f}% \tF1-Score: {(100 * bf1_all_batches):>0.2f}% \tBinaryAUROC: {(100 * bauroc_all_batches):>0.2f}%")
+        print(f"Binary Confusion Matrix:")
+        print(f"\t\tP = 0 (=Noise), N = 1 (=Spike)")
+        print(bcm_all_batches)
+        metric_bacc.reset()
+        metric_bf1.reset()
+        metric_bauroc.reset()
+        metric_bcm.reset()
+
         self.train_acc.append(100 * correct)
         self.current_acc = 100 * correct
         self.train_acc_with_epoch.append([self.epoch + 1, 100 * correct])

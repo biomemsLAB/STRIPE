@@ -10,3 +10,4 @@ torch==2.0.0
 torchinfo==1.7.2
 torchvision==0.15.1
 alive_progress==3.1.1
+torchmetrics==0.11.4

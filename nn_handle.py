@@ -482,6 +482,27 @@ class handle_model():
         plt.savefig(save_string)
         plt.close()
 
+    def plot_binary_confusion_matrix(self, save_string='bcm.png'):
+        import numpy as np
+        import seaborn as sns
+        import matplotlib.pyplot as plt
+        # @TODO: doen't work properly: tensor to numpy conversion.
+        #  Maybe move to other location. Also clarifying which cm has be saved.
+        cf_matrix = np.array([[1,2],[3,4]]) # np.array(self.test_cm.to(self.device))
+
+        categories = ['Noise (0)', 'Spike (1)']
+        group_names = ['True Neg', 'False Pos', 'False Neg', 'True Pos']
+        group_counts = ["{0:0.0f}".format(value) for value in cf_matrix.flatten()]
+        group_percentages = ["{0:.2%}".format(value) for value in cf_matrix.flatten() / np.sum(cf_matrix)]
+        labels = [f"{v1}\n{v2}\n{v3}" for v1, v2, v3 in zip(group_names, group_counts, group_percentages)]
+        labels = np.asarray(labels).reshape(2, 2)
+        sns.heatmap(cf_matrix, annot=labels, fmt='', xticklabels=categories, yticklabels=categories, cmap='Blues')
+        plt.ylabel('True label')
+        plt.xlabel('Predicted label')
+        plt.title('Binary Confusion Matrix')
+        plt.savefig(save_string)
+        plt.close()
+
     def save_json(self, filename):
         """
         Speichert alle wichtigen self-Parameter in einer JSON-Datei.

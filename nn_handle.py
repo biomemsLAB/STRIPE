@@ -45,6 +45,37 @@ class handle_model():
         # self.training_loss = []
         self.current_acc = 0
 
+        self.train_precision = []
+        self.train_precision_with_epoch = []
+        self.eval_precision = []
+        self.eval_precision_with_epoch = []
+        self.test_precision = []
+        self.test_precision_with_epoch = []
+        self.train_recall = []
+        self.train_recall_with_epoch = []
+        self.eval_recall = []
+        self.eval_recall_with_epoch = []
+        self.test_recall = []
+        self.test_recall_with_epoch = []
+        self.train_f1 = []
+        self.train_f1_with_epoch = []
+        self.eval_f1 = []
+        self.eval_f1_with_epoch = []
+        self.test_f1 = []
+        self.test_f1_with_epoch = []
+        self.train_specificity = []
+        self.train_specificity_with_epoch = []
+        self.eval_specificity = []
+        self.eval_specificity_with_epoch = []
+        self.test_specificity = []
+        self.test_specificity_with_epoch = []
+        self.train_cm = []
+        self.train_cm_with_epoch = []
+        self.eval_cm = []
+        self.eval_cm_with_epoch = []
+        self.test_cm = []
+        self.test_cm_with_epoch = []
+        
         self.train_loss = []
         self.train_loss_with_epoch = []
 
@@ -121,11 +152,16 @@ class handle_model():
         Returns:
         None
         """
-        from torchmetrics.classification import BinaryAccuracy, BinaryF1Score, BinaryAUROC, BinaryConfusionMatrix
+        import numpy as np
+        from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinarySpecificity, BinaryAUROC, BinaryConfusionMatrix
 
         metric_bacc = BinaryAccuracy().to(self.device)
+        metric_bprec = BinaryPrecision().to(self.device)
+        metric_brecl = BinaryRecall().to(self.device)
         metric_bf1 = BinaryF1Score().to(self.device)
-        metric_bauroc = BinaryAUROC(thresholds=None).to(self.device)
+        metric_bspec = BinarySpecificity().to(self.device)
+        metric_bauroc0 = BinaryAUROC(thresholds=None).to(self.device)
+        metric_bauroc1 = BinaryAUROC(thresholds=None).to(self.device)
         metric_bcm = BinaryConfusionMatrix().to(self.device)
 
         n_total_steps = len(dataloader)
@@ -171,8 +207,12 @@ class handle_model():
 
                     # metric calculation with torchmetrics
                     bacc = metric_bacc(pred.argmax(1), y)
+                    bprec = metric_bprec(pred.argmax(1), y)
+                    brecl = metric_brecl(pred.argmax(1), y)
                     bf1 = metric_bf1(pred.argmax(1), y)
-                    bauroc = metric_bauroc(pred.argmax(1), y)
+                    bspec = metric_bspec(pred.argmax(1), y)
+                    bauroc0 = metric_bauroc0(pred[:,0], y)
+                    bauroc1 = metric_bauroc1(pred[:,1], y)
                     bcm = metric_bcm(pred.argmax(1), y)
 
                     bar()
@@ -183,18 +223,40 @@ class handle_model():
 
         # metric calculation with torchmetrics
         bacc_all_batches = metric_bacc.compute()
+        bprec_all_batches = metric_bprec.compute()
+        brecl_all_batches = metric_brecl.compute()
         bf1_all_batches = metric_bf1.compute()
-        bauroc_all_batches = metric_bauroc.compute()
+        bspec_all_batches = metric_bspec.compute()
+        bauroc0_all_batches = metric_bauroc0.compute()
+        bauroc1_all_batches = metric_bauroc1.compute()
         bcm_all_batches = metric_bcm.compute()
-        print(f"C/L\tBinaryAccuracy: {(100 * bacc):>0.2f}% \tF1-Score: {(100 * bf1):>0.2f}% \tBinaryAUROC: {(100 * bauroc):>0.2f}%") # current / last metric in batch
-        print(f"All\tBinaryAccuracy: {(100 * bacc_all_batches):>0.2f}% \tF1-Score: {(100 * bf1_all_batches):>0.2f}% \tBinaryAUROC: {(100 * bauroc_all_batches):>0.2f}%")
+        #print(f"C/L\tAccuracy: {(100 * bacc):>0.2f}% \tPrecision: {(100 * bprec):>0.2f}% \tRecall: {(100 * brecl):>0.2f}% \tF1-Score: {(100 * bf1):>0.2f}% \tSpecificity: {(100 * bspec):>0.2f}% \tAUROC: {(100 * bauroc):>0.2f}%") # current / last metric in batch
+        print(f"All\tAccuracy: {(100 * bacc_all_batches):>0.2f}% \tPrecision: {(100 * bprec_all_batches):>0.2f}% \tRecall: {(100 * brecl_all_batches):>0.2f}% \tF1-Score: {(100 * bf1_all_batches):>0.2f}% \tSpecificity: {(100 * bspec_all_batches):>0.2f}% \tAUROC: {(100 * bauroc0_all_batches):>0.2f}% \t{(100 * bauroc1_all_batches):>0.2f}%")
+        print(bauroc0, bauroc1)
         print(f"Binary Confusion Matrix:")
-        print(f"\t\tP = 0 (=Noise), N = 1 (=Spike)")
+        print(f"N = 0 (=Noise), P = 1 (=Spike)")
+        print(np.array([['TN', 'FP'],['FN', 'TP']], dtype=object))
         print(bcm_all_batches)
+        
+        self.train_precision.append(100 * bprec_all_batches)
+        self.train_precision_with_epoch.append([self.epoch + 1, 100 * bprec_all_batches])
+        self.train_recall.append(100 * brecl_all_batches)
+        self.train_recall_with_epoch.append([self.epoch + 1, 100 * brecl_all_batches])
+        self.train_f1.append(100 * bf1_all_batches)
+        self.train_f1_with_epoch.append([self.epoch + 1, 100 * bf1_all_batches])
+        self.train_specificity.append(100 * bspec_all_batches)
+        self.train_f1_with_epoch.append([self.epoch + 1, 100 * bspec_all_batches])
+        self.train_cm.append(bcm_all_batches)
+        self.train_cm_with_epoch.append([self.epoch + 1, 100 * bcm_all_batches])
+
         metric_bacc.reset()
+        metric_bprec.reset()
+        metric_brecl.reset()
         metric_bf1.reset()
-        metric_bauroc.reset()
-        metric_bcm.reset()
+        metric_bspec.reset()
+        metric_bauroc0.reset()
+        metric_bauroc1.reset()
+        metric_bcm.reset()       
 
         self.train_acc.append(100 * correct)
         self.current_acc = 100 * correct
@@ -212,6 +274,18 @@ class handle_model():
         Returns:
         None
         """
+        import numpy as np
+        from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinarySpecificity, BinaryAUROC, BinaryConfusionMatrix
+
+        metric_bacc = BinaryAccuracy().to(self.device)
+        metric_bprec = BinaryPrecision().to(self.device)
+        metric_brecl = BinaryRecall().to(self.device)
+        metric_bf1 = BinaryF1Score().to(self.device)
+        metric_bspec = BinarySpecificity().to(self.device)
+        metric_bauroc0 = BinaryAUROC(thresholds=None).to(self.device)
+        metric_bauroc1 = BinaryAUROC(thresholds=None).to(self.device)
+        metric_bcm = BinaryConfusionMatrix().to(self.device)
+
         size = len(dataloader.dataset)
         num_batches = len(dataloader)
         self.model.eval()
@@ -224,11 +298,61 @@ class handle_model():
                     pred = self.model(X)
                     self.eval_loss += self.loss_fn(pred, y).item()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+
+                    # metric calculation with torchmetrics
+                    bacc = metric_bacc(pred.argmax(1), y)
+                    bprec = metric_bprec(pred.argmax(1), y)
+                    brecl = metric_brecl(pred.argmax(1), y)
+                    bf1 = metric_bf1(pred.argmax(1), y)
+                    bspec = metric_bspec(pred.argmax(1), y)
+                    bauroc0 = metric_bauroc0(pred[:,0], y)
+                    bauroc1 = metric_bauroc1(pred[:,1], y)
+                    bcm = metric_bcm(pred.argmax(1), y)
+
                     bar()
         self.scheduler.step(self.eval_loss)
         self.eval_loss /= num_batches
         correct /= size
         print(f"Evaluation Error: \tAccuracy: {(100*correct):>0.2f}%, average evaluation loss: \t{self.eval_loss:>8f}")
+
+        # metric calculation with torchmetrics
+        bacc_all_batches = metric_bacc.compute()
+        bprec_all_batches = metric_bprec.compute()
+        brecl_all_batches = metric_brecl.compute()
+        bf1_all_batches = metric_bf1.compute()
+        bspec_all_batches = metric_bspec.compute()
+        bauroc0_all_batches = metric_bauroc0.compute()
+        bauroc1_all_batches = metric_bauroc1.compute()
+        bcm_all_batches = metric_bcm.compute()
+        # print(f"C/L\tAccuracy: {(100 * bacc):>0.2f}% \tPrecision: {(100 * bprec):>0.2f}% \tRecall: {(100 * brecl):>0.2f}% \tF1-Score: {(100 * bf1):>0.2f}% \tSpecificity: {(100 * bspec):>0.2f}% \tAUROC: {(100 * bauroc):>0.2f}%") # current / last metric in batch
+        print(
+            f"All\tAccuracy: {(100 * bacc_all_batches):>0.2f}% \tPrecision: {(100 * bprec_all_batches):>0.2f}% \tRecall: {(100 * brecl_all_batches):>0.2f}% \tF1-Score: {(100 * bf1_all_batches):>0.2f}% \tSpecificity: {(100 * bspec_all_batches):>0.2f}% \tAUROC: {(100 * bauroc0_all_batches):>0.2f}% \t{(100 * bauroc1_all_batches):>0.2f}%")
+        print(bauroc0, bauroc1)
+        print(f"Binary Confusion Matrix:")
+        print(f"N = 0 (=Noise), P = 1 (=Spike)")
+        print(np.array([['TN', 'FP'], ['FN', 'TP']], dtype=object))
+        print(bcm_all_batches)
+
+        self.eval_precision.append(100 * bprec_all_batches)
+        self.eval_precision_with_epoch.append([self.epoch + 1, 100 * bprec_all_batches])
+        self.eval_recall.append(100 * brecl_all_batches)
+        self.eval_recall_with_epoch.append([self.epoch + 1, 100 * brecl_all_batches])
+        self.eval_f1.append(100 * bf1_all_batches)
+        self.eval_f1_with_epoch.append([self.epoch + 1, 100 * bf1_all_batches])
+        self.eval_specificity.append(100 * bspec_all_batches)
+        self.eval_f1_with_epoch.append([self.epoch + 1, 100 * bspec_all_batches])
+        self.eval_cm.append(bcm_all_batches)
+        self.eval_cm_with_epoch.append([self.epoch + 1, 100 * bcm_all_batches])
+
+        metric_bacc.reset()
+        metric_bprec.reset()
+        metric_brecl.reset()
+        metric_bf1.reset()
+        metric_bspec.reset()
+        metric_bauroc0.reset()
+        metric_bauroc1.reset()
+        metric_bcm.reset()
+
         self.eval_acc.append(100*correct)
         self.eval_acc_with_epoch.append([self.epoch+1, 100*correct])
         self.avg_eval_loss.append(self.eval_loss)
@@ -244,6 +368,18 @@ class handle_model():
         Returns:
         None
         """
+        import numpy as np
+        from torchmetrics.classification import BinaryAccuracy, BinaryPrecision, BinaryRecall, BinaryF1Score, BinarySpecificity, BinaryAUROC, BinaryConfusionMatrix
+
+        metric_bacc = BinaryAccuracy().to(self.device)
+        metric_bprec = BinaryPrecision().to(self.device)
+        metric_brecl = BinaryRecall().to(self.device)
+        metric_bf1 = BinaryF1Score().to(self.device)
+        metric_bspec = BinarySpecificity().to(self.device)
+        metric_bauroc0 = BinaryAUROC(thresholds=None).to(self.device)
+        metric_bauroc1 = BinaryAUROC(thresholds=None).to(self.device)
+        metric_bcm = BinaryConfusionMatrix().to(self.device)
+        
         size = len(dataloader.dataset)
         num_batches = len(dataloader)
         self.model.eval()
@@ -257,11 +393,61 @@ class handle_model():
                     pred = self.model(X)
                     test_loss += self.loss_fn(pred, y).item()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+                    
+                    # metric calculation with torchmetrics
+                    bacc = metric_bacc(pred.argmax(1), y)
+                    bprec = metric_bprec(pred.argmax(1), y)
+                    brecl = metric_brecl(pred.argmax(1), y)
+                    bf1 = metric_bf1(pred.argmax(1), y)
+                    bspec = metric_bspec(pred.argmax(1), y)
+                    bauroc0 = metric_bauroc0(pred[:,0], y)
+                    bauroc1 = metric_bauroc1(pred[:,1], y)
+                    bcm = metric_bcm(pred.argmax(1), y)
+                    
                     bar()
         test_loss /= num_batches
         self.test_loss = test_loss
         correct /= size
         print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
+
+        # metric calculation with torchmetrics
+        bacc_all_batches = metric_bacc.compute()
+        bprec_all_batches = metric_bprec.compute()
+        brecl_all_batches = metric_brecl.compute()
+        bf1_all_batches = metric_bf1.compute()
+        bspec_all_batches = metric_bspec.compute()
+        bauroc0_all_batches = metric_bauroc0.compute()
+        bauroc1_all_batches = metric_bauroc1.compute()
+        bcm_all_batches = metric_bcm.compute()
+        # print(f"C/L\tAccuracy: {(100 * bacc):>0.2f}% \tPrecision: {(100 * bprec):>0.2f}% \tRecall: {(100 * brecl):>0.2f}% \tF1-Score: {(100 * bf1):>0.2f}% \tSpecificity: {(100 * bspec):>0.2f}% \tAUROC: {(100 * bauroc):>0.2f}%") # current / last metric in batch
+        print(
+            f"All\tAccuracy: {(100 * bacc_all_batches):>0.2f}% \tPrecision: {(100 * bprec_all_batches):>0.2f}% \tRecall: {(100 * brecl_all_batches):>0.2f}% \tF1-Score: {(100 * bf1_all_batches):>0.2f}% \tSpecificity: {(100 * bspec_all_batches):>0.2f}% \tAUROC: {(100 * bauroc0_all_batches):>0.2f}% \t{(100 * bauroc1_all_batches):>0.2f}%")
+        print(bauroc0, bauroc1)
+        print(f"Binary Confusion Matrix:")
+        print(f"N = 0 (=Noise), P = 1 (=Spike)")
+        print(np.array([['TN', 'FP'], ['FN', 'TP']], dtype=object))
+        print(bcm_all_batches)
+
+        self.test_precision.append(100 * bprec_all_batches)
+        self.test_precision_with_epoch.append([self.epoch + 1, 100 * bprec_all_batches])
+        self.test_recall.append(100 * brecl_all_batches)
+        self.test_recall_with_epoch.append([self.epoch + 1, 100 * brecl_all_batches])
+        self.test_f1.append(100 * bf1_all_batches)
+        self.test_f1_with_epoch.append([self.epoch + 1, 100 * bf1_all_batches])
+        self.test_specificity.append(100 * bspec_all_batches)
+        self.test_f1_with_epoch.append([self.epoch + 1, 100 * bspec_all_batches])
+        self.test_cm.append(bcm_all_batches)
+        self.test_cm_with_epoch.append([self.epoch + 1, 100 * bcm_all_batches])
+
+        metric_bacc.reset()
+        metric_bprec.reset()
+        metric_brecl.reset()
+        metric_bf1.reset()
+        metric_bspec.reset()
+        metric_bauroc0.reset()
+        metric_bauroc1.reset()
+        metric_bcm.reset()
+                
         self.test_acc.append(100*correct)
         self.test_acc_with_epoch.append([self.epoch+1, 100*correct])
         self.final_avg_test_loss.append(self.test_loss)

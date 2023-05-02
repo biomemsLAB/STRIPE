@@ -142,6 +142,22 @@ class handle_model():
 
 
         print("Done!")
+
+    def cross_entropy_with_weights(self, pred, y):
+        import numpy as np
+        from sklearn.utils import class_weight
+        y_cpu = y.cpu()
+        pred_device = pred.to(self.device)
+        y_device = y.to(self.device)
+        #class_weights = class_weight.compute_class_weight(class_weight='balanced', classes=np.unique(y_cpu),
+        #                                                  y=y_cpu.numpy())
+        class_weights = [1, 678.487]
+        class_weights = torch.tensor(class_weights, dtype=torch.float)
+        criterion_weighted = nn.CrossEntropyLoss(weight=class_weights.to(self.device), reduction='mean')
+        #criterion_weighted = nn.CrossEntropyLoss()
+        loss = criterion_weighted(pred_device, y_device)
+        return loss
+
     def train(self, dataloader):
         """
         Trains the provided PyTorch model on the provided training dataset.
@@ -177,6 +193,7 @@ class handle_model():
 
             # y = y.squeeze(1)
             loss = self.loss_fn(pred, y)
+            #loss = self.cross_entropy_with_weights(pred, y)
             self.train_loss.append(loss.item())
             # self.scheduler.step(loss)
             # Backpropagation
@@ -203,6 +220,7 @@ class handle_model():
                     # y = y.squeeze(1)
                     pred = self.model(X)
                     check_train_loss += self.loss_fn(pred, y).item()
+                    #check_train_loss += self.cross_entropy_with_weights(pred, y).item()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
                     # metric calculation with torchmetrics
@@ -238,16 +256,16 @@ class handle_model():
         print(np.array([['TN', 'FP'],['FN', 'TP']], dtype=object))
         print(bcm_all_batches)
         
-        self.train_precision.append(100 * bprec_all_batches)
-        self.train_precision_with_epoch.append([self.epoch + 1, 100 * bprec_all_batches])
-        self.train_recall.append(100 * brecl_all_batches)
-        self.train_recall_with_epoch.append([self.epoch + 1, 100 * brecl_all_batches])
-        self.train_f1.append(100 * bf1_all_batches)
-        self.train_f1_with_epoch.append([self.epoch + 1, 100 * bf1_all_batches])
-        self.train_specificity.append(100 * bspec_all_batches)
-        self.train_f1_with_epoch.append([self.epoch + 1, 100 * bspec_all_batches])
-        self.train_cm.append(bcm_all_batches)
-        self.train_cm_with_epoch.append([self.epoch + 1, 100 * bcm_all_batches])
+        self.train_precision.append(100 * np.asarray(bprec_all_batches.cpu()))
+        self.train_precision_with_epoch.append([self.epoch + 1, 100 * np.asarray(bprec_all_batches.cpu())])
+        self.train_recall.append(100 * np.asarray(brecl_all_batches.cpu()))
+        self.train_recall_with_epoch.append([self.epoch + 1, 100 * np.asarray(brecl_all_batches.cpu())])
+        self.train_f1.append(100 * np.asarray(bf1_all_batches.cpu()))
+        self.train_f1_with_epoch.append([self.epoch + 1, 100 * np.asarray(bf1_all_batches.cpu())])
+        self.train_specificity.append(100 * np.asarray(bspec_all_batches.cpu()))
+        self.train_specificity_with_epoch.append([self.epoch + 1, 100 * np.asarray(bspec_all_batches.cpu())])
+        self.train_cm.append(np.asarray(bcm_all_batches.cpu()))
+        self.train_cm_with_epoch.append([self.epoch + 1, np.asarray(bcm_all_batches.cpu())])
 
         metric_bacc.reset()
         metric_bprec.reset()
@@ -297,6 +315,7 @@ class handle_model():
                     # y = y.squeeze(1)
                     pred = self.model(X)
                     self.eval_loss += self.loss_fn(pred, y).item()
+                    #self.eval_loss += self.cross_entropy_with_weights(pred, y).item()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
                     # metric calculation with torchmetrics
@@ -333,16 +352,16 @@ class handle_model():
         print(np.array([['TN', 'FP'], ['FN', 'TP']], dtype=object))
         print(bcm_all_batches)
 
-        self.eval_precision.append(100 * bprec_all_batches)
-        self.eval_precision_with_epoch.append([self.epoch + 1, 100 * bprec_all_batches])
-        self.eval_recall.append(100 * brecl_all_batches)
-        self.eval_recall_with_epoch.append([self.epoch + 1, 100 * brecl_all_batches])
-        self.eval_f1.append(100 * bf1_all_batches)
-        self.eval_f1_with_epoch.append([self.epoch + 1, 100 * bf1_all_batches])
-        self.eval_specificity.append(100 * bspec_all_batches)
-        self.eval_f1_with_epoch.append([self.epoch + 1, 100 * bspec_all_batches])
-        self.eval_cm.append(bcm_all_batches)
-        self.eval_cm_with_epoch.append([self.epoch + 1, 100 * bcm_all_batches])
+        self.eval_precision.append(100 * np.asarray(bprec_all_batches.cpu()))
+        self.eval_precision_with_epoch.append([self.epoch + 1, 100 * np.asarray(bprec_all_batches.cpu())])
+        self.eval_recall.append(100 * np.asarray(brecl_all_batches.cpu()))
+        self.eval_recall_with_epoch.append([self.epoch + 1, 100 * np.asarray(brecl_all_batches.cpu())])
+        self.eval_f1.append(100 * np.asarray(bf1_all_batches.cpu()))
+        self.eval_f1_with_epoch.append([self.epoch + 1, 100 * np.asarray(bf1_all_batches.cpu())])
+        self.eval_specificity.append(100 * np.asarray(bspec_all_batches.cpu()))
+        self.eval_specificity_with_epoch.append([self.epoch + 1, 100 * np.asarray(bspec_all_batches.cpu())])
+        self.eval_cm.append(np.asarray(bcm_all_batches.cpu()))
+        self.eval_cm_with_epoch.append([self.epoch + 1, np.asarray(bcm_all_batches.cpu())])
 
         metric_bacc.reset()
         metric_bprec.reset()
@@ -392,6 +411,7 @@ class handle_model():
                     # y = y.squeeze(1)
                     pred = self.model(X)
                     test_loss += self.loss_fn(pred, y).item()
+                    #test_loss += self.cross_entropy_with_weights(pred, y).item()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
                     
                     # metric calculation with torchmetrics
@@ -428,16 +448,16 @@ class handle_model():
         print(np.array([['TN', 'FP'], ['FN', 'TP']], dtype=object))
         print(bcm_all_batches)
 
-        self.test_precision.append(100 * bprec_all_batches)
-        self.test_precision_with_epoch.append([self.epoch + 1, 100 * bprec_all_batches])
-        self.test_recall.append(100 * brecl_all_batches)
-        self.test_recall_with_epoch.append([self.epoch + 1, 100 * brecl_all_batches])
-        self.test_f1.append(100 * bf1_all_batches)
-        self.test_f1_with_epoch.append([self.epoch + 1, 100 * bf1_all_batches])
-        self.test_specificity.append(100 * bspec_all_batches)
-        self.test_f1_with_epoch.append([self.epoch + 1, 100 * bspec_all_batches])
-        self.test_cm.append(bcm_all_batches)
-        self.test_cm_with_epoch.append([self.epoch + 1, 100 * bcm_all_batches])
+        self.test_precision.append(100 * np.asarray(bprec_all_batches.cpu()))
+        self.test_precision_with_epoch.append([self.epoch + 1, 100 * np.asarray(bprec_all_batches.cpu())])
+        self.test_recall.append(100 * np.asarray(brecl_all_batches.cpu()))
+        self.test_recall_with_epoch.append([self.epoch + 1, 100 * np.asarray(brecl_all_batches.cpu())])
+        self.test_f1.append(100 * np.asarray(bf1_all_batches.cpu()))
+        self.test_f1_with_epoch.append([self.epoch + 1, 100 * np.asarray(bf1_all_batches.cpu())])
+        self.test_specificity.append(100 * np.asarray(bspec_all_batches.cpu()))
+        self.test_specificity_with_epoch.append([self.epoch + 1, 100 * np.asarray(bspec_all_batches.cpu())])
+        self.test_cm.append(np.asarray(bcm_all_batches.cpu()))
+        self.test_cm_with_epoch.append([self.epoch + 1, np.asarray(bcm_all_batches.cpu())])
 
         metric_bacc.reset()
         metric_bprec.reset()
@@ -513,6 +533,8 @@ class handle_model():
         Returns:
         None
         """
+
+        # @TODO: test_xxx are not saved properly!
         import json
         with open(filename, 'w') as f:
             json.dump({
@@ -539,6 +561,39 @@ class handle_model():
                 'best_eval_acc': self.best_eval_acc,
                 'best_test_acc': self.best_test_acc,
                 'avg_tet_acc': self.avg_tet_acc,
+
+                'train_precision': self.train_precision,
+                'train_precision_with_epoch': self.train_precision_with_epoch,
+                'eval_precision': self.eval_precision,
+                'eval_precision_with_epoch': self.eval_precision_with_epoch,
+                'test_precision': self.test_precision,
+                'test_precision_with_epoch': self.test_precision_with_epoch,
+                'train_recall': self.train_recall,
+                'train_recall_with_epoch': self.train_recall_with_epoch,
+                'eval_recall': self.eval_recall,
+                'eval_recall_with_epoch': self.eval_recall_with_epoch,
+                'test_recall': self.test_recall,
+                'test_recall_with_epoch': self.test_recall_with_epoch,
+                'train_f1': self.train_f1,
+                'train_f1_with_epoch': self.train_f1_with_epoch,
+                'eval_f1': self.eval_f1,
+                'eval_f1_with_epoch': self.eval_f1_with_epoch,
+                'test_f1': self.test_f1,
+                'test_f1_with_epoch': self.test_f1_with_epoch,
+                'train_specificity': self.train_specificity,
+                'train_specificity_with_epoch': self.train_specificity_with_epoch,
+                'eval_specificity': self.eval_specificity,
+                'eval_specificity_with_epoch': self.eval_specificity_with_epoch,
+                'test_specificity': self.test_specificity,
+                'test_specificity_with_epoch': self.test_specificity_with_epoch,
+
+                #'train_cm': self.train_cm,
+                #'train_cm_with_epoch': self.train_cm_with_epoch,
+                #'eval_cm': self.eval_cm,
+                #'eval_cm_with_epoch': self.eval_cm_with_epoch,
+                #'test_cm': self.test_cm,
+                #'test_cm_with_epoch': self.test_cm_with_epoch,
+
                 'name_of_model': self.name_of_model,
                 'device': str(self.device),
                 'epochs': self.epochs,

@@ -26,6 +26,32 @@ class DenseModel(nn.Module):
         fc3_out = self.selu(self.fc3(fc2_out))
         return fc3_out
 
+class DenseModel_based_on_FNN_SpikeDeeptector(nn.Module):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True,
+                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), dtype=None) -> None:
+        super(DenseModel_based_on_FNN_SpikeDeeptector, self).__init__()
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.bias = bias
+        self.device = device
+
+        self.flatten = nn.Flatten()
+        self.fc1 = nn.Linear(in_features, 500)
+        self.fc2 = nn.Linear(500, 250)
+        self.fc3 = nn.Linear(250, 125)
+        self.fc4 = nn.Linear(125, out_features)
+        self.selu = nn.SELU()
+
+    def forward(self, input_tensor: Tensor) -> Tensor:
+        # flatten_tensor = self.flatten(input_tensor)
+        fc1_out = self.selu(self.fc1(input_tensor))
+        fc2_out = self.selu(self.fc2(fc1_out))
+        fc3_out = self.selu(self.fc3(fc2_out))
+        fc4_out = self.selu(self.fc4(fc3_out))
+        return fc4_out
+
+
 import numpy as np
 import torch.nn as nn
 from einops import rearrange

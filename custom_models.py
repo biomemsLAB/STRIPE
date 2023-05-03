@@ -51,6 +51,60 @@ class DenseModel_based_on_FNN_SpikeDeeptector(nn.Module):
         fc4_out = self.selu(self.fc4(fc3_out))
         return fc4_out
 
+class Encoder(nn.Module):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True,
+                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), dtype=None) -> None:
+        super(Encoder, self).__init__()
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.bias = bias
+        self.device = device
+
+        self.fc1 = nn.Linear(in_features, out_features)
+    def forward(self, x):
+        return F.sigmoid(self.fc1(x))
+
+
+class Decoder(nn.Module):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True,
+                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), dtype=None) -> None:
+        super(Decoder, self).__init__()
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.bias = bias
+        self.device = device
+
+        self.fc1 = nn.Linear(in_features, out_features)
+
+    def forward(self, x):
+        return F.sigmoid(self.fc1(x))
+
+class AEClassifier(nn.Module):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True,
+                 device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), dtype=None) -> None:
+        super(AEClassifier, self).__init__()
+
+        self.in_features = in_features
+        self.out_features = out_features
+        self.bias = bias
+        self.device = device
+
+        self.fc = nn.Linear(in_features, 784)
+        self.fc1 = Encoder(in_features=784, out_features=32)
+        self.fc2 = Decoder(in_features=32, out_features=784)
+        self.fc3 = nn.Linear(32, out_features)
+        self.selu = nn.SELU()
+
+    # @TODO: building custom train, eval, test function with reconstruction loss (maybe MSE) and classification loss (maybe BCE). Currently AE is just a dense model.
+    def forward(self, x):
+        fc_out = self.selu(self.fc(x))
+        encoded = self.selu(self.fc1(fc_out))
+        decoded = self.selu(self.fc2(encoded))
+        fc3_out = self.selu(self.fc3(encoded))
+        return fc3_out # , decoded
+
 
 import numpy as np
 import torch.nn as nn

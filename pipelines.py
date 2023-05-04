@@ -44,7 +44,41 @@ def dataset_pipeline_generate_debug_dataset(path_to_working_dir, cropping_size=0
     print('files saved at:', os.path.join(path_to_working_dir, path_debug))
     return None
 
-path_to_working_dir = '/mnt/MainNAS/BioMemsLaborNAS/Projekt_Ordner/STRIPE'
+#path_to_working_dir = '/mnt/MainNAS/BioMemsLaborNAS/Projekt_Ordner/STRIPE'
 #dataset_pipeline_generate_debug_dataset(path_to_working_dir)
+
+from utilities import create_dataloader_simple, loading_numpy_datasets_for_training, create_directory_structure
+path_to_working_dir = '/mnt/MainNAS/BioMemsLaborNAS/Projekt_Ordner/STRIPE'
+create_directory_structure(path_to_working_dir)
+import os
+path_to_working_dir_debug = os.path.join(path_to_working_dir, 'debug')
+
+# loading preprocessed numpy arrays
+data_train_balanced, label_train_balanced, data_test, label_test, data_val, label_val = loading_numpy_datasets_for_training(path_to_working_dir_debug)
+
+print('train: spikes:', label_train_balanced.sum(), 'total:', len(label_train_balanced))
+print('test: spikes:', label_test.sum(), 'total:', len(label_test))
+print('val: spikes:', label_val.sum(), 'total:', len(label_val))
+
+batch_size = 32
+# creation of dataloader
+train_dataloader = create_dataloader_simple(data_train_balanced, label_train_balanced, batch_size=batch_size)
+test_dataloader = create_dataloader_simple(data_test, label_test, batch_size=batch_size)
+val_dataloader = create_dataloader_simple(data_val, label_val, batch_size=batch_size)
+
+import torch
+from custom_models import DenseModel, AEClassifier, DenseModel_based_on_FNN_SpikeDeeptector, SimpleConvNet
+device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+dense = DenseModel(in_features=20, hidden_features=50, out_features=2, device=device)
+ae_model = AEClassifier(in_features=20, out_features=2, device=device)
+dense_FNN = DenseModel_based_on_FNN_SpikeDeeptector(in_features=20, out_features=2, device=device)
+cnn = SimpleConvNet(in_features=20, out_features=2, device=device)
+from nn_handle import handle_model, handle_ae_model
+
+handler_object = handle_model(cnn, train_dataloader, val_dataloader, test_dataloader, device)
+handler_object.run(epochs=3, path_to_save='/mnt/MainNAS/BioMemsLaborNAS/Projekt_Ordner/STRIPE/debug/results/cnn')
+
+#handler_object = handle_ae_model(ae_model, train_dataloader, val_dataloader, test_dataloader, device)
+#handler_object.run(epochs=3, path_to_save='/mnt/MainNAS/BioMemsLaborNAS/Projekt_Ordner/STRIPE/debug/results/AE')
 
 print ('pipeline finished')

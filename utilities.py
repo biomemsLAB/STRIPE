@@ -482,7 +482,7 @@ def balancing_dataset_with_undersampling(data, labels, verbose=True):
     from imblearn.under_sampling import RandomUnderSampler
     if verbose:
         print('balancing started')
-    undersample = RandomUnderSampler(sampling_strategy='majority')
+    undersample = RandomUnderSampler(sampling_strategy='majority') #'majority', tried: 0.5
     data_result, labels_result = undersample.fit_resample(data, labels)
     if verbose:
         print('balancing finished')

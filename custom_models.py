@@ -42,14 +42,56 @@ class DenseModel_based_on_FNN_SpikeDeeptector(nn.Module):
         self.fc3 = nn.Linear(250, 125)
         self.fc4 = nn.Linear(125, out_features)
         self.selu = nn.SELU()
+        self.bn = nn.BatchNorm1d(in_features)
+        self.drop = nn.Dropout(0.25)
+        self.relu = nn.ReLU() # does not perform like selu
 
     def forward(self, input_tensor: Tensor) -> Tensor:
         # flatten_tensor = self.flatten(input_tensor)
+        #fc_bn = self.bn(input_tensor)
+        #fc1_out = self.selu(self.fc1(fc_bn))
         fc1_out = self.selu(self.fc1(input_tensor))
+        fc1_out = self.drop(fc1_out)
         fc2_out = self.selu(self.fc2(fc1_out))
+        fc2_out = self.drop(fc2_out)
         fc3_out = self.selu(self.fc3(fc2_out))
+        fc3_out = self.drop(fc3_out)
         fc4_out = self.selu(self.fc4(fc3_out))
+        fc4_out = F.softplus(fc4_out)
+        #fc4_out = F.softmax(fc4_out)
         return fc4_out
+
+class SimpleConvNet(nn.Module):
+    def __init__(self, in_features: int, out_features: int, bias: bool = True,
+                device=torch.device('cuda' if torch.cuda.is_available() else 'cpu'), dtype=None) -> None:
+        super(SimpleConvNet, self).__init__()
+
+        self.device = device
+        self.bias = bias
+        self.in_features = in_features
+        self.out_features = out_features
+
+        self.selu = nn.SELU()
+
+        self.conv1 = nn.Conv1d(1, 500, kernel_size=3, stride=1, padding=1)
+        #self.relu1 = nn.ReLU()
+        self.pool1 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.conv2 = nn.Conv1d(500, 500, kernel_size=3, stride=1, padding=1)
+        #self.relu2 = nn.ReLU()
+        self.pool2 = nn.MaxPool1d(kernel_size=2, stride=2)
+        self.fc = nn.Linear(500 * (in_features // 4), out_features)
+
+    def forward(self, x):
+        x = x.unsqueeze(1)
+        x = self.conv1(x)
+        x = self.selu(x)
+        x = self.pool1(x)
+        x = self.conv2(x)
+        x = self.selu(x)
+        x = self.pool2(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        return x
 
 class Encoder(nn.Module):
     def __init__(self, in_features: int, out_features: int, bias: bool = True,
@@ -95,15 +137,16 @@ class AEClassifier(nn.Module):
         self.fc1 = Encoder(in_features=784, out_features=32)
         self.fc2 = Decoder(in_features=32, out_features=784)
         self.fc3 = nn.Linear(32, out_features)
+        self.fc4 = nn.Linear(784, in_features)
         self.selu = nn.SELU()
 
-    # @TODO: building custom train, eval, test function with reconstruction loss (maybe MSE) and classification loss (maybe BCE). Currently AE is just a dense model.
     def forward(self, x):
         fc_out = self.selu(self.fc(x))
         encoded = self.selu(self.fc1(fc_out))
         decoded = self.selu(self.fc2(encoded))
+        fc4_out = self.selu(self.fc4(decoded))
         fc3_out = self.selu(self.fc3(encoded))
-        return fc3_out # , decoded
+        return fc3_out, fc4_out
 
 
 import numpy as np

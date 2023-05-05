@@ -189,12 +189,17 @@ class handle_model():
 
             # Compute prediction error
             pred = self.model(X)
+            #pred_th = (pred > 0.9).float()
+            #pred = pred_th.clone().detach().requires_grad_(True)
             #max_indices = pred.argmax(dim=1)
             #max_tensor = max_indices
 
             # y = y.squeeze(1)
             loss = self.loss_fn(pred, y)
             #loss = self.cross_entropy_with_weights(pred, y)
+            props = torch.sigmoid(pred)
+            pred = (props >= 0.95).float()
+
             self.train_loss.append(loss.item())
             # self.scheduler.step(loss)
             # Backpropagation
@@ -220,8 +225,12 @@ class handle_model():
                     X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
                     # y = y.squeeze(1)
                     pred = self.model(X)
+                    #pred_th = (pred > 0.9).float()
+                    #pred = pred_th.clone().detach().requires_grad_(True)
                     check_train_loss += self.loss_fn(pred, y).item()
                     #check_train_loss += self.cross_entropy_with_weights(pred, y).item()
+                    props = torch.sigmoid(pred)
+                    pred = (props >= 0.95).float()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
                     # metric calculation with torchmetrics
@@ -315,8 +324,12 @@ class handle_model():
                     X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
                     # y = y.squeeze(1)
                     pred = self.model(X)
+                    #pred_th = (pred > 0.9).float()
+                    #pred = pred_th.clone().detach().requires_grad_(True)
                     self.eval_loss += self.loss_fn(pred, y).item()
                     #self.eval_loss += self.cross_entropy_with_weights(pred, y).item()
+                    props = torch.sigmoid(pred)
+                    pred = (props >= 0.95).float()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
 
                     # metric calculation with torchmetrics
@@ -411,8 +424,12 @@ class handle_model():
                     X, y = X.to(self.device), y.type(torch.LongTensor).to(self.device)
                     # y = y.squeeze(1)
                     pred = self.model(X)
+                    #pred_th = (pred > 0.9).float()
+                    #pred = pred_th.clone().detach().requires_grad_(True)
                     test_loss += self.loss_fn(pred, y).item()
                     #test_loss += self.cross_entropy_with_weights(pred, y).item()
+                    props = torch.sigmoid(pred)
+                    pred = (props >= 0.95).float()
                     correct += (pred.argmax(1) == y).type(torch.float).sum().item()
                     
                     # metric calculation with torchmetrics

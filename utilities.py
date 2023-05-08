@@ -381,7 +381,7 @@ def get_window_size_in_index_count(timestamps, window_size_in_sec):
     return window_size_in_count - 1
 
 
-def preprocessing_for_one_recording(path, window_size_in_sec=0.001):
+def preprocessing_for_one_recording(path, window_size_in_sec=0.002):
     """
     preprocessing pipeline for one recording (without normalization)
     :param path: path to recording file
@@ -636,6 +636,55 @@ def loading_numpy_datasets_for_training(path_to_working_dir):
     frames_y_val_crp = load_frame_from_disk(os.path.join(path_to_working_dir, 'data/prepared_for_training', 'frames_y_val_crp.npy'))
 
     return frames_x_train_res, frames_y_train_res, frames_x_test_crp, frames_y_test_crp, frames_x_val_crp, frames_y_val_crp
+
+
+def plot_and_save_windows(frame, save_path):
+    """
+    This function plots and saves the raw timeseries for each window in the input data.
+    Parameters:
+    data (ndarray): Input data containing different arrays, where each row represents a window of a timeseries.
+    save_path (str): Path to save the generated plots.
+    Returns:
+    None
+    """
+    import matplotlib.pyplot as plt
+    print('started plotting')
+
+    # Determine the number of windows in the input data
+    n_windows = frame.shape[0]
+    '''
+    y_min = np.inf
+    y_max = -np.inf
+    for i in range(n_windows):
+        raw_data = data[i]['signals']
+        y_min = min(y_min, np.min(raw_data))
+        y_max = max(y_max, np.max(raw_data))
+    '''
+
+    # Iterate over each window in the input data
+    for i in range(n_windows):
+
+        # Extract the raw timeseries data and the timepoints for this window
+        raw_data = frame[i]['signals']
+        timepoints = frame[i]['timestamps']
+        label = frame[i]['label_per_window']
+
+        # Plot the raw timeseries for this window
+        plt.plot(timepoints, raw_data, color='k')
+        #plt.xlabel('Time')
+        #plt.ylabel('Raw Data')
+        #plt.title(f'Window {i+1}')
+
+        # Set the y-axis limits
+        #plt.ylim(y_min, y_max)
+
+        plt.axis('off')
+        plt.gcf().set_size_inches(128/80, 128/80)
+
+        plt.savefig(f'{save_path}/window_{i+1}_{label}.jpg', dpi=50, format='jpg', bbox_inches='tight', pad_inches=0)
+
+        # Clear the plot
+        plt.clf()
 
 
 # data loader
